@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ncurses-bin \
     zsh \
     fonts-powerline \
+    locales \
     sudo \
     openssh-server \
     openssh-client \
@@ -42,7 +43,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rsync \
     libnss3 \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && apt-get clean \
+    && locale-gen en_US.UTF-8
 
 # Configure terminal environment for remote development
 ENV TERM=xterm-256color
