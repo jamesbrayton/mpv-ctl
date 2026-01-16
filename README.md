@@ -51,8 +51,11 @@ A Python service for controlling multiple mpv instances via Unix sockets, exposi
 # Install uv if needed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install mpv-controller directly from git
-curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- "git+https://github.com/jamesbrayton/mpv-ctl.git"
+# Install mpv-controller (latest from main branch)
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash
+
+# Or install a specific version/branch/tag
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- v1.0.0
 ```
 
 This will:

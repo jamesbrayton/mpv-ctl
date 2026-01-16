@@ -3,6 +3,10 @@
 
 set -e
 
+# Configuration - Update this with your actual repository URL
+REPO_URL="https://github.com/jamesbrayton/mpv-ctl.git"
+VERSION="${1:-main}"  # Default to main branch if no version specified
+
 INSTALL_DIR="${HOME}/.local/share/mpv-controller"
 CONFIG_DIR="${HOME}/.config/mpv-controller"
 SYSTEMD_DIR="${HOME}/.config/systemd/user"
@@ -37,21 +41,8 @@ echo "Creating virtual environment..."
 uv venv
 
 # Install package
-if [ -n "${1}" ]; then
-    # Install from provided URL (e.g., git+https://...)
-    echo "Installing mpv-controller from: ${1}"
-    uv pip install "${1}"
-else
-    # Install from current directory (for development)
-    echo "Installing mpv-controller from local directory..."
-    if [ -f "${INSTALL_DIR}/../../mpv-controller/pyproject.toml" ]; then
-        uv pip install -e "${INSTALL_DIR}/../../mpv-controller"
-    else
-        echo -e "${RED}Error: No installation source specified${NC}"
-        echo "Usage: $0 [git+https://github.com/user/repo.git]"
-        exit 1
-    fi
-fi
+echo "Installing mpv-controller from ${REPO_URL} (${VERSION})..."
+uv pip install "git+${REPO_URL}@${VERSION}"
 
 echo -e "${GREEN}✓${NC} Package installed"
 
@@ -113,6 +104,8 @@ echo
 echo "======================================"
 echo -e "${GREEN}Installation Complete!${NC}"
 echo
+echo "Installed version: ${VERSION}"
+echo
 echo "Next steps:"
 echo "  1. Edit configuration: ${CONFIG_DIR}/config.yaml"
 echo "  2. Enable service:     systemctl --user enable mpv-controller"
@@ -121,3 +114,5 @@ echo "  4. Check status:       systemctl --user status mpv-controller"
 echo "  5. View logs:          journalctl --user -u mpv-controller -f"
 echo
 echo "API Documentation will be available at: http://localhost:8000/docs"
+echo
+echo "To upgrade: curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash"

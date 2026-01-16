@@ -11,7 +11,11 @@ Get mpv-controller running in 5 minutes!
 ## 1. One-Line Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- "git+https://github.com/jamesbrayton/mpv-ctl.git"
+# Install latest version (main branch)
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash
+
+# Or install a specific version/branch/tag
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- v1.0.0
 ```
 
 This installs everything automatically! Skip to step 3.
