@@ -53,7 +53,5 @@ htmlcov/
 # Config (don't commit user configs, only examples)
 config.yaml
 
-# gRPC generated files
-*_pb2.py
-*_pb2.pyi
-*_pb2_grpc.py
+# Note: gRPC generated files (*_pb2.py, *_pb2_grpc.py) are committed
+# They are generated from .proto files but should be in version control
