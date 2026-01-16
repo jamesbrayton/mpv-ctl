@@ -78,8 +78,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```bash
 mkdir -p ~/.local/share/mpv-controller
 cd ~/.local/share/mpv-controller
-uv venv
+uv venv .venv
+source .venv/bin/activate
 uv pip install "git+https://github.com/jamesbrayton/mpv-ctl.git"
+deactivate
 ```
 
 **Option B: Install from Local Clone (For development)**
@@ -131,7 +133,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/.local/share/mpv-controller
-ExecStart=%h/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+ExecStart=%h/.local/share/mpv-controller/.venv/bin/python -m mpv_controller.main
 Restart=always
 RestartSec=10
 Environment="MPV_CONTROLLER_CONFIG=%h/.config/mpv-controller/config.yaml"

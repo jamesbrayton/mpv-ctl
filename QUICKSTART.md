@@ -29,10 +29,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Create installation directory and virtual environment
 mkdir -p ~/.local/share/mpv-controller
 cd ~/.local/share/mpv-controller
-uv venv
+uv venv .venv
+source .venv/bin/activate
 
 # Install from git
 uv pip install "git+https://github.com/jamesbrayton/mpv-ctl.git"
+deactivate
 ```
 
 ## 3. Configure Your mpv Instances
@@ -80,7 +82,7 @@ server:
 
 **Option A: Run directly (for testing)**
 ```bash
-~/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+~/.local/share/mpv-controller/.venv/bin/python -m mpv_controller.main
 ```
 
 **Option B: Run as systemd service (recommended)**
@@ -184,11 +186,13 @@ uv sync --dev --reinstall
 
 ```bash
 # Run locally (if installed in venv)
-~/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+~/.local/share/mpv-controller/.venv/bin/python -m mpv_controller.main
 
 # Update to latest version
 cd ~/.local/share/mpv-controller
+source .venv/bin/activate
 uv pip install --upgrade "git+https://github.com/jamesbrayton/mpv-ctl.git"
+deactivate
 systemctl --user restart mpv-controller
 
 # View systemd logs

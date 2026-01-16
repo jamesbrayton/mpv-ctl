@@ -36,13 +36,15 @@ echo "Creating installation directory: ${INSTALL_DIR}"
 mkdir -p "${INSTALL_DIR}"
 cd "${INSTALL_DIR}"
 
-# Create virtual environment
+# Create virtual environment with uv
 echo "Creating virtual environment..."
-uv venv
+uv venv .venv
 
 # Install package
 echo "Installing mpv-controller from ${REPO_URL} (${VERSION})..."
+source .venv/bin/activate
 uv pip install "git+${REPO_URL}@${VERSION}"
+deactivate
 
 echo -e "${GREEN}✓${NC} Package installed"
 
@@ -78,7 +80,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/.local/share/mpv-controller
-ExecStart=%h/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+ExecStart=%h/.local/share/mpv-controller/.venv/bin/python -m mpv_controller.main
 Restart=always
 RestartSec=10
 

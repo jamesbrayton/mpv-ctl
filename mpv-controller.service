@@ -6,7 +6,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/.local/share/mpv-controller
-ExecStart=%h/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+ExecStart=%h/.local/share/mpv-controller/.venv/bin/python -m mpv_controller.main
 Restart=always
 RestartSec=10
 
