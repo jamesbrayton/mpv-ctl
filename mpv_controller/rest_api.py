@@ -262,6 +262,33 @@ def create_rest_app(config: Config, socket_manager: MpvSocketManager) -> FastAPI
             state=state,
             instance_id=instance_id,
         )
+    
+    @app.get(
+        "/mpv/{instance_id}/properties",
+        tags=["Properties"],
+        summary="Get available properties",
+        description="Retrieves the list of all available properties from the mpv instance.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance not found"},
+            504: {"model": ErrorResponse, "description": "Socket timeout"},
+            503: {"model": ErrorResponse, "description": "Socket connection error"},
+        },
+    )
+    async def list_properties(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+    ):
+        """Get list of available properties."""
+        logger.info(
+            "List properties",
+            instance_id=instance_id,
+        )
+        
+        properties = socket_manager.get_property(instance_id, "property-list")
+        
+        return {
+            "instance_id": instance_id,
+            "properties": properties,
+        }
 
     @app.get(
         "/mpv/{instance_id}/properties/{property_name}",

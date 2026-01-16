@@ -213,7 +213,12 @@ curl -X POST http://localhost:8000/mpv/mpv-0/volume \
   -d '{"volume": 75.0}'
 ```
 
-**Get Property:**
+**List All Available Properties:**
+```bash
+curl http://localhost:8000/mpv/mpv-0/properties
+```
+
+**Get Specific Property:**
 ```bash
 curl http://localhost:8000/mpv/mpv-0/properties/filename
 ```

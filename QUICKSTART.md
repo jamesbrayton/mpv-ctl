@@ -115,6 +115,9 @@ curl -X POST http://localhost:8000/mpv/mpv-0/volume \
   -H "Content-Type: application/json" \
   -d '{"volume": 50.0}'
 
+# List all available properties
+curl http://localhost:8000/mpv/mpv-0/properties
+
 # Get current filename
 curl http://localhost:8000/mpv/mpv-0/properties/filename
 
