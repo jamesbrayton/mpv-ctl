@@ -45,14 +45,41 @@ A Python service for controlling multiple mpv instances via Unix sockets, exposi
 
 ## Installation
 
-### 1. Install uv
+### Quick Install (Recommended)
+
+```bash
+# Install uv if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install mpv-controller directly from git
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- "git+https://github.com/jamesbrayton/mpv-ctl.git"
+```
+
+This will:
+- Create a virtual environment in `~/.local/share/mpv-controller`
+- Install the package
+- Set up the systemd service
+- Create a config template at `~/.config/mpv-controller/config.yaml`
+
+### Manual Installation
+
+#### 1. Install uv
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 2. Clone and Install
+#### 2. Install Package
 
+**Option A: Install from Git (Recommended for production)**
+```bash
+mkdir -p ~/.local/share/mpv-controller
+cd ~/.local/share/mpv-controller
+uv venv
+uv pip install "git+https://github.com/jamesbrayton/mpv-ctl.git"
+```
+
+**Option B: Install from Local Clone (For development)**
 ```bash
 git clone <your-repo-url> mpv-controller
 cd mpv-controller
@@ -82,17 +109,43 @@ See [config.example.yaml](config.example.yaml) for all configuration options.
 
 ### 4. Set Up systemd Service
 
-Copy the service file and enable it:
+**If you used the quick install script, the service is already installed. Just enable it:**
+
+```bash
+systemctl --user enable mpv-controller.service
+systemctl --user start mpv-controller.service
+```
+
+**For manual installation, create the service file:**
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp mpv-controller.service ~/.config/systemd/user/
+cat > ~/.config/systemd/user/mpv-controller.service << 'EOF'
+[Unit]
+Description=mpv Controller Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/mpv-controller
+ExecStart=%h/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+Restart=always
+RestartSec=10
+Environment="MPV_CONTROLLER_CONFIG=%h/.config/mpv-controller/config.yaml"
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mpv-controller
+
+[Install]
+WantedBy=default.target
+EOF
+
 systemctl --user daemon-reload
 systemctl --user enable mpv-controller.service
 systemctl --user start mpv-controller.service
 ```
 
-Check status:
+**Check status:**
 
 ```bash
 systemctl --user status mpv-controller.service

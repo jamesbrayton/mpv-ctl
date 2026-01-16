@@ -1,12 +1,12 @@
 [Unit]
 Description=mpv Controller Service
-Documentation=https://github.com/yourusername/mpv-controller
+Documentation=https://github.com/jamesbrayton/mpv-ctl
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/mpv-controller
-ExecStart=/usr/bin/env bash -c 'export UV_CACHE_DIR=%h/.uv-cache && uv run python -m mpv_controller.main'
+WorkingDirectory=%h/.local/share/mpv-controller
+ExecStart=%h/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
 Restart=always
 RestartSec=10
 

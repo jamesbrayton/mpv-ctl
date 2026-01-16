@@ -8,26 +8,27 @@ Get mpv-controller running in 5 minutes!
 - uv package manager
 - mpv with IPC socket enabled
 
-## 1. Install uv (if needed)
+## 1. One-Line Install
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- "git+https://github.com/jamesbrayton/mpv-ctl.git"
 ```
 
-## 2. Set Up Project
+This installs everything automatically! Skip to step 3.
+
+## 2. Manual Install (Alternative)
 
 ```bash
-# Clone or navigate to project directory
-cd /path/to/mpv-controller
+# Install uv if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Set cache directory
-export UV_CACHE_DIR=~/.uv-cache
+# Create installation directory and virtual environment
+mkdir -p ~/.local/share/mpv-controller
+cd ~/.local/share/mpv-controller
+uv venv
 
-# Install dependencies
-uv sync --dev
-
-# Run tests to verify
-uv run pytest -v
+# Install from git
+uv pip install "git+https://github.com/jamesbrayton/mpv-ctl.git"
 ```
 
 ## 3. Configure Your mpv Instances
@@ -73,12 +74,15 @@ server:
 
 ## 5. Run the Service
 
+**Option A: Run directly (for testing)**
 ```bash
-# Set config path
-export MPV_CONTROLLER_CONFIG=~/.config/mpv-controller/config.yaml
+~/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
+```
 
-# Run service
-uv run python -m mpv_controller.main
+**Option B: Run as systemd service (recommended)**
+```bash
+systemctl --user enable mpv-controller
+systemctl --user start mpv-controller
 ```
 
 Service will start on:
@@ -116,25 +120,26 @@ curl http://localhost:8000/mpv/mpv-0/status
 
 Open http://localhost:8000/docs in your browser for interactive API documentation!
 
-## 7. Install as systemd Service (Optional)
+## 7. Manage the Service
 
 ```bash
-# Copy service file
-mkdir -p ~/.config/systemd/user
-cp mpv-controller.service ~/.config/systemd/user/
+# Enable service to start on boot
+systemctl --user enable mpv-controller
 
-# Reload systemd
-systemctl --user daemon-reload
-
-# Enable and start
-systemctl --user enable mpv-controller.service
-systemctl --user start mpv-controller.service
+# Start service
+systemctl --user start mpv-controller
 
 # Check status
-systemctl --user status mpv-controller.service
+systemctl --user status mpv-controller
 
 # View logs
-journalctl --user -u mpv-controller.service -f
+journalctl --user -u mpv-controller -f
+
+# Restart service
+systemctl --user restart mpv-controller
+
+# Stop service
+systemctl --user stop mpv-controller
 ```
 
 ## Troubleshooting
@@ -174,11 +179,13 @@ uv sync --dev --reinstall
 ## Common Commands
 
 ```bash
-# Run locally
-uv run python -m mpv_controller.main
+# Run locally (if installed in venv)
+~/.local/share/mpv-controller/venv/bin/python -m mpv_controller.main
 
-# Run tests
-uv run pytest -v
+# Update to latest version
+cd ~/.local/share/mpv-controller
+uv pip install --upgrade "git+https://github.com/jamesbrayton/mpv-ctl.git"
+systemctl --user restart mpv-controller
 
 # View systemd logs
 journalctl --user -u mpv-controller -f
@@ -188,6 +195,13 @@ systemctl --user restart mpv-controller
 
 # Stop service
 systemctl --user stop mpv-controller
+
+# Uninstall
+systemctl --user stop mpv-controller
+systemctl --user disable mpv-controller
+rm -rf ~/.local/share/mpv-controller
+rm ~/.config/systemd/user/mpv-controller.service
+systemctl --user daemon-reload
 ```
 
 ## Getting Help
