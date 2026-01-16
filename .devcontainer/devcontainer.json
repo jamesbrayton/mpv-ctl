@@ -2,11 +2,11 @@
   "name": "Dev Container",
 
   // Use pre-built image (local or from registry)
-  // Local: "agent-trader-dev:latest"
-  // GitHub: "ghcr.io/jamesbrayton/agent-trader-dev:latest"
-  //"image": "ghcr.io/jamesbrayton/agent-trader-dev:latest",
-    // Build the image from the Dockerfile in this folder
-  "build": { "dockerfile": "Dockerfile" },
+  // Local: "james-dev:python"
+  // GitHub: "ghcr.io/jamesbrayton/james-dev:python"
+  // Build the image from the Dockerfile in this folder
+  //"build": { "dockerfile": "Dockerfile" },
+  "image": "ghcr.io/jamesbrayton/james-dev:python",
 
   // Use a named volume instead of your host folder
   "workspaceFolder": "/workspace",

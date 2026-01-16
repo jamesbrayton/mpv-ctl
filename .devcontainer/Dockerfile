@@ -77,7 +77,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && npm config set audit false --global
 ENV npm_config_cache=/tmp/npm-cache
 
-
 # Install uv (modern Python package manager)
 # Copy from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -112,15 +111,15 @@ RUN mkdir -p /workspace && \
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
-# Switch to ZSH shell
-SHELL ["/bin/zsh", "-c"]
-
 # Install oh-my-zsh
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended && \
     sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/g' /home/$USERNAME/.zshrc
 
 # Install ClaudeCode CLI as developer user
 RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Set up environment variables in .zshrc
+RUN echo "export PATH=$PATH:\$HOME/.local/bin:\$HOME/.cargo/bin" >> /home/$USERNAME/.zshrc
 
 # Set working directory
 WORKDIR /workspace
