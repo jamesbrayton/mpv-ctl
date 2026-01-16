@@ -112,6 +112,9 @@ RUN mkdir -p /workspace && \
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
+# Switch to ZSH shell
+SHELL ["/bin/zsh", "-c"]
+
 # Install oh-my-zsh
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended && \
     sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/g' /home/$USERNAME/.zshrc

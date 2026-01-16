@@ -26,7 +26,7 @@
   },
 
   // Minimal post-create (everything is pre-installed)
-  "postCreateCommand": "echo '🚀 Agent Trader development environment ready!'",
+  "postCreateCommand": "echo '🚀 development environment ready!'",
 
   "features": {
   },
