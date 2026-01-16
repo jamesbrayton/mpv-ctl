@@ -1,0 +1,41 @@
+# Kubernetes Ingress for mpv-controller REST API
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mpv-controller
+  namespace: default
+  annotations:
+    # Example annotations for common ingress controllers
+    # Adjust these based on your ingress controller and authentication setup
+    
+    # For nginx ingress controller
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # External authentication (configure based on your setup)
+    # nginx.ingress.kubernetes.io/auth-url: "https://auth.example.com/verify"
+    # nginx.ingress.kubernetes.io/auth-signin: "https://auth.example.com/signin"
+    
+    # SSL redirect (if using HTTPS)
+    # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Rate limiting (optional)
+    # nginx.ingress.kubernetes.io/limit-rps: "10"
+    
+spec:
+  rules:
+    - host: mpv-controller.example.com  # CHANGE THIS to your actual domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mpv-controller
+                port:
+                  name: rest
+  
+  # Uncomment for HTTPS with cert-manager
+  # tls:
+  #   - hosts:
+  #       - mpv-controller.example.com
+  #     secretName: mpv-controller-tls

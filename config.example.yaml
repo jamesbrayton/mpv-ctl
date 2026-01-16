@@ -1,0 +1,53 @@
+# mpv-controller Configuration Example
+# Copy this file to ~/.config/mpv-controller/config.yaml and customize
+
+# List of mpv instances to control
+mpv_instances:
+  - id: mpv-0
+    socket_path: /run/user/1000/app/io.mpv.Mpv/mpv-0/mpv.sock
+    display_name: Primary Player
+  
+  - id: mpv-1
+    socket_path: /run/user/1000/app/io.mpv.Mpv/mpv-1/mpv.sock
+    display_name: Secondary Player
+
+# Server configuration
+server:
+  # Port for REST API
+  rest_port: 8000
+  
+  # Port for gRPC API
+  grpc_port: 50051
+  
+  # Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for localhost only)
+  bind_address: "0.0.0.0"
+  
+  # Enable Swagger UI at /docs
+  enable_swagger_ui: true
+
+# Logging configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: INFO
+  
+  # Optional log file path (logs to stdout if not specified)
+  # log_file: /var/log/mpv-controller/app.log
+
+# Socket communication settings
+socket:
+  # Timeout in seconds for socket read operations
+  read_timeout: 2.0
+  
+  # Maximum number of retry attempts for read operations (writes are never retried)
+  max_retries: 3
+  
+  # Exponential backoff multiplier for retries
+  backoff_multiplier: 0.5
+  
+  # Add random jitter to retry backoff timing to prevent thundering herd
+  jitter: true
+  
+  # Interval in seconds for checking instance availability
+  # Set to 0 to disable caching (check on every request)
+  # Note: Cached availability may need adjustment for responsive dashboards
+  availability_check_interval: 30

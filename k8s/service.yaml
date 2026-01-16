@@ -1,0 +1,39 @@
+# Kubernetes Service for mpv-controller
+# This creates an Endpoints-based service pointing to the host machine
+apiVersion: v1
+kind: Service
+metadata:
+  name: mpv-controller
+  namespace: default
+  labels:
+    app: mpv-controller
+spec:
+  ports:
+    - name: rest
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: grpc
+      protocol: TCP
+      port: 50051
+      targetPort: 50051
+  clusterIP: None  # Headless service for manual endpoint management
+
+---
+# Manual Endpoints for the service
+# Replace 192.168.1.100 with your actual host machine IP
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: mpv-controller
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 192.168.1.100  # CHANGE THIS to your host machine IP
+    ports:
+      - name: rest
+        port: 8000
+        protocol: TCP
+      - name: grpc
+        port: 50051
+        protocol: TCP
