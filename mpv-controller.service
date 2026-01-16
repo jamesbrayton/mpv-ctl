@@ -1,0 +1,22 @@
+[Unit]
+Description=mpv Controller Service
+Documentation=https://github.com/yourusername/mpv-controller
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/mpv-controller
+ExecStart=/usr/bin/env bash -c 'export UV_CACHE_DIR=%h/.uv-cache && uv run python -m mpv_controller.main'
+Restart=always
+RestartSec=10
+
+# Environment
+Environment="MPV_CONTROLLER_CONFIG=%h/.config/mpv-controller/config.yaml"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mpv-controller
+
+[Install]
+WantedBy=default.target

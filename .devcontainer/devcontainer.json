@@ -1,0 +1,165 @@
+{
+  "name": "Dev Container",
+
+  // Use pre-built image (local or from registry)
+  // Local: "agent-trader-dev:latest"
+  // GitHub: "ghcr.io/jamesbrayton/agent-trader-dev:latest"
+  //"image": "ghcr.io/jamesbrayton/agent-trader-dev:latest",
+    // Build the image from the Dockerfile in this folder
+  "build": { "dockerfile": "Dockerfile" },
+
+  // Use a named volume instead of your host folder
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+
+  // Optional: caches & isolation niceties
+  // "mounts": [
+  //   "source=devc-npm-cache,target=/home/vscode/.npm,type=volume",
+  //   "source=devc-pip-cache,target=/home/vscode/.cache/pip,type=volume",
+  //   "source=${localWorkspaceFolder},target=/ro-src,type=bind,readonly"
+  // ],
+
+  "remoteEnv": {
+    "GITHUB_TOKEN":"${localEnv:GITHUB_TOKEN}",
+    "PATH":"${containerEnv:HOME}/.local/bin:${containerEnv:PATH}"
+  },
+
+  // Minimal post-create (everything is pre-installed)
+  "postCreateCommand": "echo '🚀 Agent Trader development environment ready!'",
+
+  "features": {
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.mypy-type-checker",
+        "charliermarsh.ruff",
+        "ms-python.pytest",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "ms-vscode.vscode-json"
+      ],
+
+      "settings": {
+        "chat.agent.maxRequests": 9999,
+        "chat.customAgentInSubagent.enabled": true,
+        "chat.mcp.discovery.enabled": {
+          "claude-desktop": true
+        },
+        "chat.mcp.gallery.enabled": true,
+        "chat.tools.global.autoApprove": true,
+        "chat.tools.terminal.autoReplyToPrompts": true,
+        "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+        "chat.useClaudeSkills": true,
+        "chat.useNestedAgentsMdFiles": true,
+        "chat.tools.terminal.autoApprove": {
+            "kubectl": true,
+            "cd": true,
+            "echo": true,
+            "ls": true,
+            "pwd": true,
+            "cat": true,
+            "head": true,
+            "tail": true,
+            "findstr": true,
+            "wc": true,
+            "tr": true,
+            "cut": true,
+            "cmp": true,
+            "which": true,
+            "basename": true,
+            "dirname": true,
+            "realpath": true,
+            "readlink": true,
+            "stat": true,
+            "file": true,
+            "du": true,
+            "df": true,
+            "sleep": true,
+            "nl": true,
+            "grep": true,
+            "git": true,
+            "/^git branch\\b.*-(d|D|m|M|-delete|-force)\\b/": false,
+            "Get-ChildItem": true,
+            "Get-Content": true,
+            "Get-Date": true,
+            "Get-Random": true,
+            "Get-Location": true,
+            "Write-Host": true,
+            "Write-Output": true,
+            "Split-Path": true,
+            "Join-Path": true,
+            "Start-Sleep": true,
+            "Where-Object": true,
+            "/^Select-[a-z0-9]/i": true,
+            "/^Measure-[a-z0-9]/i": true,
+            "/^Compare-[a-z0-9]/i": true,
+            "/^Format-[a-z0-9]/i": true,
+            "/^Sort-[a-z0-9]/i": true,
+            "column": true,
+            "/^column\\b.*-c\\s+[0-9]{4,}/": false,
+            "date": true,
+            "/^date\\b.*(-s|--set)\\b/": false,
+            "find": true,
+            "/^find\\b.*-(delete|exec|execdir|fprint|fprintf|fls|ok|okdir)\\b/": false,
+            "sort": true,
+            "/^sort\\b.*-(o|S)\\b/": false,
+            "tree": true,
+            "/^tree\\b.*-o\\b/": false,
+            "rm": false,
+            "rmdir": false,
+            "del": false,
+            "Remove-Item": false,
+            "ri": false,
+            "rd": false,
+            "erase": false,
+            "dd": false,
+            "kill": false,
+            "ps": false,
+            "top": false,
+            "Stop-Process": false,
+            "spps": false,
+            "taskkill": false,
+            "taskkill.exe": false,
+            "curl": false,
+            "wget": false,
+            "Invoke-RestMethod": false,
+            "Invoke-WebRequest": false,
+            "irm": false,
+            "iwr": false,
+            "chmod": false,
+            "chown": false,
+            "Set-ItemProperty": false,
+            "sp": false,
+            "Set-Acl": false,
+            "jq": false,
+            "xargs": false,
+            "eval": false,
+            "Invoke-Expression": false,
+            "iex": false
+        },
+        "github.copilot.chat.agent.autoFix": true,
+        "github.copilot.chat.githubMcpServer.enabled": true,
+        "github.copilot.chat.generateTests.codeLens": true,
+        "github.copilot.chat.newWorkspace.useContext7": true,
+        "github.copilot.chat.tools.memory.enabled": true,
+        "github.copilot.enable": {
+            "markdown": true
+        },
+        "terminal.integrated.defaultProfile.osx": "bash",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Forward ADB port for device connection
+  //"forwardPorts": [5037],
+
+  // Run as developer user (matches Dockerfile)
+  "remoteUser": "vscode"
+
+}

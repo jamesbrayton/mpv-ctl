@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package mpv_controller;
+
+// Service for controlling mpv instances
+service MpvController {
+    // Semantic commands
+    rpc Pause(InstanceRequest) returns (CommandResponse);
+    rpc Play(InstanceRequest) returns (CommandResponse);
+    rpc Seek(SeekRequest) returns (CommandResponse);
+    rpc SetVolume(VolumeRequest) returns (CommandResponse);
+    
+    // Property access
+    rpc GetProperty(PropertyRequest) returns (PropertyResponse);
+    rpc GetStatus(InstanceRequest) returns (CommandResponse);
+    
+    // Raw command execution
+    rpc SendRawCommand(RawCommandRequest) returns (CommandResponse);
+    
+    // Health checks
+    rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request for operations on a specific instance
+message InstanceRequest {
+    string instance_id = 1;
+}
+
+// Request for seeking
+message SeekRequest {
+    string instance_id = 1;
+    double position = 2;
+    bool relative = 3;
+}
+
+// Request for setting volume
+message VolumeRequest {
+    string instance_id = 1;
+    double volume = 2;
+}
+
+// Request for getting a property
+message PropertyRequest {
+    string instance_id = 1;
+    string property_name = 2;
+}
+
+// Request for executing raw commands
+message RawCommandRequest {
+    string instance_id = 1;
+    repeated string command = 2;
+}
+
+// Health check request
+message HealthCheckRequest {
+    string service = 1;
+}
+
+// Health check response
+message HealthCheckResponse {
+    enum ServingStatus {
+        UNKNOWN = 0;
+        SERVING = 1;
+        NOT_SERVING = 2;
+        SERVICE_UNKNOWN = 3;
+    }
+    ServingStatus status = 1;
+}
+
+// Property response
+message PropertyResponse {
+    string name = 1;
+    string value_json = 2;  // JSON-encoded value
+    string instance_id = 3;
+    ErrorDetail error = 4;
+}
+
+// Command execution result
+message CommandResult {
+    bool success = 1;
+    string data_json = 2;  // JSON-encoded data
+    string error_message = 3;
+}
+
+// mpv instance state
+message MpvState {
+    optional bool pause = 1;
+    optional double time_pos = 2;
+    optional double duration = 3;
+    optional string filename = 4;
+    optional double volume = 5;
+}
+
+// Response from command execution
+message CommandResponse {
+    CommandResult command_result = 1;
+    MpvState state = 2;
+    string instance_id = 3;
+    ErrorDetail error = 4;
+}
+
+// Error details
+message ErrorDetail {
+    string code = 1;
+    string message = 2;
+    string details_json = 3;  // JSON-encoded details
+}
