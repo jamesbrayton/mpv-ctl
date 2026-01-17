@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tree \
     rsync \
     libnss3 \
+    jq \
     nodejs \
     npm \
     python3 \
