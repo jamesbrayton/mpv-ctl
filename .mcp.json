@@ -1,24 +1,5 @@
 {
   "mcpServers": {
-    "memoryBank": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "github:jamesbrayton/memory-bank-mcp"
-      ],
-      "env": {
-        "MEMORY_BANK_ROOT": "/workspace/.memoryBank"
-      }
-    },
-    "context7": {
-        "type": "stdio",
-        "command": "npx",
-        "args": [
-            "-y",
-            "@upstash/context7-mcp"
-        ]
-    },
     "filesystem": {
         "type": "stdio",
         "command": "npx",
