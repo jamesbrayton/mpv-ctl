@@ -6,7 +6,7 @@
   // GitHub: "ghcr.io/jamesbrayton/james-dev:python"
   // Build the image from the Dockerfile in this folder
   //"build": { "dockerfile": "Dockerfile" },
-  "image": "ghcr.io/jamesbrayton/james-dev:base",
+  "image": "ghcr.io/jamesbrayton/devcontainer:base",
 
   // Use a named volume instead of your host folder
   "workspaceFolder": "/workspace",
