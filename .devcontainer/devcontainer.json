@@ -23,8 +23,7 @@
   "remoteEnv": {
     "GITHUB_TOKEN":"${localEnv:GITHUB_TOKEN}",
     "GITHUB_PERSONAL_ACCESS_TOKEN":"${localEnv:GITHUB_TOKEN}",
-    "PATH":"${containerEnv:HOME}/.local/bin:${containerEnv:PATH}",
-    "TERM": "xterm" // Fix for Ghostty terminal issues
+    "PATH":"${containerEnv:HOME}/.local/bin:${containerEnv:PATH}"
   },
   
   //  "initializeCommand": "echo Initializing Dev Container... ", 
