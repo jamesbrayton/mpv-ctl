@@ -1,5 +1,6 @@
 """Data models and error handling for mpv-controller."""
 
+from enum import Enum
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -278,4 +279,199 @@ class VolumeRequest(BaseModel):
         examples=[75.0],
         ge=0,
         le=100,
+    )
+
+
+class SpeedRequest(BaseModel):
+    """Request for setting playback speed."""
+
+    speed: float = Field(
+        ...,
+        description="Playback speed multiplier (0.01-100)",
+        examples=[1.0, 1.5, 2.0],
+        ge=0.01,
+        le=100,
+    )
+
+
+# Profile Models
+class ProfileInfo(BaseModel):
+    """Information about an mpv profile."""
+
+    name: str = Field(
+        ...,
+        description="Name of the profile",
+        examples=["gpu-hq", "low-latency"],
+    )
+    options: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Profile options/settings",
+        examples=[{"vo": "gpu", "hwdec": "auto"}],
+    )
+
+
+class ProfileCreateRequest(BaseModel):
+    """Request for creating a new profile."""
+
+    name: str = Field(
+        ...,
+        description="Name of the profile to create",
+        examples=["my-custom-profile"],
+        min_length=1,
+        max_length=100,
+    )
+    options: dict[str, Any] = Field(
+        ...,
+        description="Profile options/settings",
+        examples=[{"vo": "gpu", "hwdec": "auto"}],
+    )
+
+
+class ProfileUpdateRequest(BaseModel):
+    """Request for updating a profile."""
+
+    options: dict[str, Any] = Field(
+        ...,
+        description="New profile options/settings (replaces existing)",
+        examples=[{"vo": "gpu", "hwdec": "auto"}],
+    )
+
+
+class ProfileListResponse(BaseModel):
+    """Response containing list of profiles."""
+
+    profiles: list[ProfileInfo] = Field(
+        ...,
+        description="List of available profiles",
+    )
+
+
+# Playlist Models
+class PlaylistInfo(BaseModel):
+    """Information about a playlist."""
+
+    name: str = Field(
+        ...,
+        description="Name of the playlist (without .m3u extension)",
+        examples=["favorites", "workout"],
+    )
+    path: str = Field(
+        ...,
+        description="Full path to the playlist file",
+        examples=["/media/playlists/favorites.m3u"],
+    )
+    entry_count: int = Field(
+        ...,
+        description="Number of entries in the playlist",
+        examples=[10, 25],
+        ge=0,
+    )
+
+
+class PlaylistEntry(BaseModel):
+    """A single entry in a playlist."""
+
+    path: str = Field(
+        ...,
+        description="Path to the media file",
+        examples=["/media/videos/video1.mp4"],
+    )
+    title: Optional[str] = Field(
+        None,
+        description="Optional title for the entry",
+        examples=["My Favorite Video"],
+    )
+
+
+class PlaylistContents(BaseModel):
+    """Contents of a playlist."""
+
+    name: str = Field(
+        ...,
+        description="Name of the playlist",
+        examples=["favorites"],
+    )
+    entries: list[PlaylistEntry] = Field(
+        ...,
+        description="List of entries in the playlist",
+    )
+
+
+class PlaylistListResponse(BaseModel):
+    """Response containing list of playlists."""
+
+    playlists: list[PlaylistInfo] = Field(
+        ...,
+        description="List of available playlists",
+    )
+    folder: str = Field(
+        ...,
+        description="Path to the playlist folder",
+        examples=["/media/playlists"],
+    )
+
+
+class PlaylistCreateRequest(BaseModel):
+    """Request for creating a new playlist."""
+
+    name: str = Field(
+        ...,
+        description="Name of the playlist to create (without .m3u extension)",
+        examples=["my-new-playlist"],
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-zA-Z0-9_\-]+$",
+    )
+    entries: list[PlaylistEntry] = Field(
+        ...,
+        description="Initial entries for the playlist",
+    )
+
+
+class PlaylistUpdateRequest(BaseModel):
+    """Request for updating a playlist."""
+
+    entries: list[PlaylistEntry] = Field(
+        ...,
+        description="Entries to add or replace",
+    )
+    replace: bool = Field(
+        default=False,
+        description="If true, replace all entries; if false, append to existing",
+    )
+
+
+class PlaylistSwitchMode(str, Enum):
+    """Mode for switching to a new playlist."""
+
+    IMMEDIATE = "immediate"
+    AFTER_CURRENT = "after_current"
+    AFTER_PLAYLIST = "after_playlist"
+
+
+class PlaylistSwitchRequest(BaseModel):
+    """Request for switching to a playlist."""
+
+    name: str = Field(
+        ...,
+        description="Name of the playlist to switch to",
+        examples=["favorites"],
+    )
+    mode: PlaylistSwitchMode = Field(
+        default=PlaylistSwitchMode.IMMEDIATE,
+        description="When to switch to the new playlist",
+    )
+
+
+class MessageResponse(BaseModel):
+    """Generic success response with a message."""
+
+    success: bool = Field(
+        default=True,
+        description="Whether the operation was successful",
+    )
+    message: str = Field(
+        ...,
+        description="Description of what was done",
+        examples=["Profile created successfully"],
     )

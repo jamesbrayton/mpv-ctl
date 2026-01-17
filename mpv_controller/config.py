@@ -97,6 +97,26 @@ class SocketSettings(BaseModel):
     )
 
 
+class PathSettings(BaseModel):
+    """File path configuration for mpv config and profiles."""
+
+    mpv_config_path: Optional[str] = Field(
+        None,
+        description="Path to the mpv configuration file",
+        examples=["~/.config/mpv/mpv.conf"],
+    )
+    profiles_config_path: Optional[str] = Field(
+        None,
+        description="Path to the mpv profiles configuration file",
+        examples=["~/.config/mpv/profiles.conf"],
+    )
+    playlist_folder: Optional[str] = Field(
+        None,
+        description="Path to the folder containing playlist files (.m3u)",
+        examples=["~/Music/playlists", "/media/playlists"],
+    )
+
+
 class Config(BaseModel):
     """Root configuration model."""
 
@@ -116,6 +136,10 @@ class Config(BaseModel):
     socket: SocketSettings = Field(
         default_factory=SocketSettings,
         description="Socket communication configuration",
+    )
+    paths: PathSettings = Field(
+        default_factory=PathSettings,
+        description="File path configuration for mpv config and profiles",
     )
 
 

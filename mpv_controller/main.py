@@ -11,6 +11,8 @@ import uvicorn
 
 from .config import load_config
 from .grpc_service import create_grpc_server
+from .playlist_manager import PlaylistManager
+from .profile_manager import ProfileManager
 from .rest_api import create_rest_app
 from .socket_manager import MpvSocketManager
 
@@ -75,9 +77,17 @@ def main():
         # Initialize socket manager
         socket_manager = MpvSocketManager(config)
         logger.info("Socket manager initialized")
-        
+
+        # Initialize profile manager
+        profile_manager = ProfileManager(config)
+        logger.info("Profile manager initialized")
+
+        # Initialize playlist manager
+        playlist_manager = PlaylistManager(config)
+        logger.info("Playlist manager initialized")
+
         # Create REST app
-        rest_app = create_rest_app(config, socket_manager)
+        rest_app = create_rest_app(config, socket_manager, profile_manager, playlist_manager)
         logger.info("REST API configured", port=config.server.rest_port)
         
         # Create gRPC server

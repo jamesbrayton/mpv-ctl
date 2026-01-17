@@ -21,3 +21,7 @@ socket:
   backoff_multiplier: 0.3
   jitter: true
   availability_check_interval: 0  # Disable for testing
+
+paths:
+  profiles_config_path: /tmp/test-profiles.conf
+  playlist_folder: /tmp/test-playlists

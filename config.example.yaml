@@ -37,17 +37,30 @@ logging:
 socket:
   # Timeout in seconds for socket read operations
   read_timeout: 2.0
-  
+
   # Maximum number of retry attempts for read operations (writes are never retried)
   max_retries: 3
-  
+
   # Exponential backoff multiplier for retries
   backoff_multiplier: 0.5
-  
+
   # Add random jitter to retry backoff timing to prevent thundering herd
   jitter: true
-  
+
   # Interval in seconds for checking instance availability
   # Set to 0 to disable caching (check on every request)
   # Note: Cached availability may need adjustment for responsive dashboards
   availability_check_interval: 30
+
+# File path configuration for mpv config and profiles
+paths:
+  # Path to the mpv configuration file (optional)
+  # mpv_config_path: ~/.config/mpv/mpv.conf
+
+  # Path to the mpv profiles configuration file
+  # Required for profile management endpoints
+  profiles_config_path: ~/.config/mpv/profiles.conf
+
+  # Path to the folder containing playlist files (.m3u)
+  # Required for playlist management endpoints
+  playlist_folder: ~/playlists

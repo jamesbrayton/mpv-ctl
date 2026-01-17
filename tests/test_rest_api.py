@@ -1,22 +1,39 @@
 """Unit tests for REST API."""
 
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
-from mpv_controller.config import Config, MpvInstance, ServerSettings, SocketSettings
+from mpv_controller.config import Config, MpvInstance, PathSettings, ServerSettings, SocketSettings
 from mpv_controller.models import (
     InstanceNotFoundError,
+    PlaylistEntry,
+    ProfileInfo,
     SocketConnectionError,
     SocketTimeoutError,
 )
+from mpv_controller.playlist_manager import PlaylistManager
+from mpv_controller.profile_manager import ProfileManager
 from mpv_controller.rest_api import create_rest_app
 from mpv_controller.socket_manager import MpvSocketManager
 
 
 @pytest.fixture
-def mock_config():
+def temp_dirs():
+    """Create temporary directories for profiles and playlists."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmppath = Path(tmpdir)
+        profiles_path = tmppath / "profiles.conf"
+        playlists_path = tmppath / "playlists"
+        playlists_path.mkdir()
+        yield {"profiles": profiles_path, "playlists": playlists_path}
+
+
+@pytest.fixture
+def mock_config(temp_dirs):
     """Create a mock configuration."""
     return Config(
         mpv_instances=[
@@ -40,6 +57,10 @@ def mock_config():
             grpc_port=50051,
             enable_swagger_ui=True,
         ),
+        paths=PathSettings(
+            profiles_config_path=str(temp_dirs["profiles"]),
+            playlist_folder=str(temp_dirs["playlists"]),
+        ),
     )
 
 
@@ -52,9 +73,21 @@ def socket_manager(mock_config):
 
 
 @pytest.fixture
-def client(mock_config, socket_manager):
+def profile_manager(mock_config):
+    """Create a profile manager instance."""
+    return ProfileManager(mock_config)
+
+
+@pytest.fixture
+def playlist_manager(mock_config):
+    """Create a playlist manager instance."""
+    return PlaylistManager(mock_config)
+
+
+@pytest.fixture
+def client(mock_config, socket_manager, profile_manager, playlist_manager):
     """Create a test client for the REST API."""
-    app = create_rest_app(mock_config, socket_manager)
+    app = create_rest_app(mock_config, socket_manager, profile_manager, playlist_manager)
     return TestClient(app)
 
 
@@ -375,8 +408,446 @@ class TestErrorHandling:
         socket_manager.send_command = Mock(
             side_effect=SocketConnectionError("mpv-0", "/tmp/mpv-0.sock", "Connection refused")
         )
-        
+
         response = client.post("/mpv/mpv-0/pause")
         assert response.status_code == 503
         data = response.json()
         assert data["error"]["code"] == "SOCKET_CONNECTION_ERROR"
+
+
+class TestSpeedControlEndpoints:
+    """Tests for speed control endpoints."""
+
+    def test_set_speed(self, client, socket_manager):
+        """Test setting playback speed."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/speed", json={"speed": 1.5})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_speed_up(self, client, socket_manager):
+        """Test increasing playback speed."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/speed/up")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_speed_down(self, client, socket_manager):
+        """Test decreasing playback speed."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/speed/down")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+
+class TestFrameNavigationEndpoints:
+    """Tests for frame navigation endpoints."""
+
+    def test_frame_forward(self, client, socket_manager):
+        """Test advancing one frame."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": True,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/frame/forward")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_frame_backward(self, client, socket_manager):
+        """Test going back one frame."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": True,
+                "time_pos": 120.4,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/frame/backward")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+
+class TestPlaylistNavigationEndpoints:
+    """Tests for playlist navigation endpoints."""
+
+    def test_playlist_next(self, client, socket_manager):
+        """Test playing next video."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 0.0,
+                "duration": 200.0,
+                "volume": 100.0,
+                "filename": "video2.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/playlist/next")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_playlist_previous(self, client, socket_manager):
+        """Test playing previous video."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 0.0,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "video1.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/playlist/previous")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_playlist_restart(self, client, socket_manager):
+        """Test restarting current video."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 0.0,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post("/mpv/mpv-0/playlist/restart")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["time_pos"] == 0.0
+
+
+class TestProfileEndpoints:
+    """Tests for profile management endpoints."""
+
+    def test_list_profiles_empty(self, client):
+        """Test listing profiles when none exist."""
+        response = client.get("/profiles")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["profiles"] == []
+
+    def test_create_profile(self, client):
+        """Test creating a profile."""
+        response = client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "gpu", "hwdec": "auto"}}
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["name"] == "test-profile"
+        assert data["options"]["vo"] == "gpu"
+
+    def test_get_profile(self, client):
+        """Test getting a specific profile."""
+        # Create profile first
+        client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "gpu"}}
+        )
+
+        response = client.get("/profiles/test-profile")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "test-profile"
+
+    def test_get_profile_not_found(self, client):
+        """Test getting a non-existent profile."""
+        response = client.get("/profiles/nonexistent")
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"]["code"] == "PROFILE_NOT_FOUND"
+
+    def test_update_profile(self, client):
+        """Test updating a profile."""
+        # Create profile first
+        client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "gpu"}}
+        )
+
+        response = client.put(
+            "/profiles/test-profile",
+            json={"options": {"vo": "sdl", "hwdec": "no"}}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["options"]["vo"] == "sdl"
+        assert data["options"]["hwdec"] == "no"
+
+    def test_delete_profile(self, client):
+        """Test deleting a profile."""
+        # Create profile first
+        client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "gpu"}}
+        )
+
+        response = client.delete("/profiles/test-profile")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Verify it's deleted
+        response = client.get("/profiles/test-profile")
+        assert response.status_code == 404
+
+
+class TestPlaylistFileEndpoints:
+    """Tests for playlist file management endpoints."""
+
+    def test_list_playlists_empty(self, client):
+        """Test listing playlists when none exist."""
+        response = client.get("/playlists")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["playlists"] == []
+
+    def test_create_playlist(self, client):
+        """Test creating a playlist."""
+        response = client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [
+                    {"path": "/media/video1.mp4", "title": "Video 1"},
+                    {"path": "/media/video2.mp4"},
+                ]
+            }
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["name"] == "test-playlist"
+        assert len(data["entries"]) == 2
+
+    def test_get_playlist(self, client):
+        """Test getting a specific playlist."""
+        # Create playlist first
+        client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [{"path": "/media/video1.mp4"}]
+            }
+        )
+
+        response = client.get("/playlists/test-playlist")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "test-playlist"
+
+    def test_get_playlist_not_found(self, client):
+        """Test getting a non-existent playlist."""
+        response = client.get("/playlists/nonexistent")
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"]["code"] == "PLAYLIST_NOT_FOUND"
+
+    def test_update_playlist_append(self, client):
+        """Test updating a playlist with append mode."""
+        # Create playlist first
+        client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [{"path": "/media/video1.mp4"}]
+            }
+        )
+
+        response = client.put(
+            "/playlists/test-playlist",
+            json={
+                "entries": [{"path": "/media/video2.mp4"}],
+                "replace": False
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["entries"]) == 2
+
+    def test_update_playlist_replace(self, client):
+        """Test updating a playlist with replace mode."""
+        # Create playlist first
+        client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [{"path": "/media/video1.mp4"}, {"path": "/media/video2.mp4"}]
+            }
+        )
+
+        response = client.put(
+            "/playlists/test-playlist",
+            json={
+                "entries": [{"path": "/media/new-video.mp4"}],
+                "replace": True
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["entries"]) == 1
+
+    def test_delete_playlist(self, client):
+        """Test deleting a playlist."""
+        # Create playlist first
+        client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [{"path": "/media/video1.mp4"}]
+            }
+        )
+
+        response = client.delete("/playlists/test-playlist")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Verify it's deleted
+        response = client.get("/playlists/test-playlist")
+        assert response.status_code == 404
+
+
+class TestPlaylistSwitchEndpoint:
+    """Tests for playlist switch endpoint."""
+
+    def test_switch_playlist_immediate(self, client, socket_manager):
+        """Test switching to a playlist immediately."""
+        # Create playlist first
+        client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [{"path": "/media/video1.mp4"}]
+            }
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 0.0,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "video1.mp4",
+            }
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/playlist/switch",
+            json={"name": "test-playlist", "mode": "immediate"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_switch_playlist_after_current(self, client, socket_manager):
+        """Test switching to a playlist after current video."""
+        # Create playlist first
+        client.post(
+            "/playlists",
+            json={
+                "name": "test-playlist",
+                "entries": [{"path": "/media/video1.mp4"}]
+            }
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.0,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "current.mp4",
+            }
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/playlist/switch",
+            json={"name": "test-playlist", "mode": "after_current"}
+        )
+        assert response.status_code == 200
+
+    def test_switch_playlist_not_found(self, client, socket_manager):
+        """Test switching to a non-existent playlist."""
+        response = client.post(
+            "/mpv/mpv-0/playlist/switch",
+            json={"name": "nonexistent", "mode": "immediate"}
+        )
+        assert response.status_code == 404

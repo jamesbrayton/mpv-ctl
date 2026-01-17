@@ -6,7 +6,11 @@ A Python service for controlling multiple mpv instances via Unix sockets, exposi
 
 - **Multi-instance control**: Manage multiple mpv instances simultaneously
 - **Dual API**: REST API with OpenAPI/Swagger documentation and gRPC service
-- **Semantic commands**: High-level commands (pause, play, seek, volume) with automatic state retrieval
+- **Semantic commands**: High-level commands (pause, play, seek, volume, speed) with automatic state retrieval
+- **Frame navigation**: Single-frame forward/backward stepping
+- **Playlist navigation**: Next, previous, restart current video
+- **Profile management**: List, create, update, delete mpv profiles; apply profiles to instances
+- **Playlist management**: Manage .m3u playlist files; switch playlists with immediate, after-current, or after-playlist modes
 - **Raw command support**: Execute any mpv command directly
 - **Resilient communication**: Exponential backoff with jitter for read operations
 - **Health checks**: Kubernetes-ready `/health` and `/ready` endpoints
@@ -235,6 +239,135 @@ curl -X POST http://localhost:8000/mpv/mpv-0/command \
   -d '{"command": ["loadfile", "/path/to/video.mp4"]}'
 ```
 
+#### Speed Control
+
+**Set Playback Speed:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/speed \
+  -H "Content-Type: application/json" \
+  -d '{"speed": 1.5}'
+```
+
+**Increase Speed by 0.05:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/speed/up
+```
+
+**Decrease Speed by 0.05:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/speed/down
+```
+
+#### Frame Navigation
+
+**Advance One Frame:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/frame/forward
+```
+
+**Go Back One Frame:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/frame/backward
+```
+
+#### Playlist Navigation
+
+**Play Next Video:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/playlist/next
+```
+
+**Play Previous Video:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/playlist/previous
+```
+
+**Restart Current Video:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/playlist/restart
+```
+
+**Switch to Playlist (immediate):**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/playlist/switch \
+  -H "Content-Type: application/json" \
+  -d '{"name": "favorites", "mode": "immediate"}'
+```
+
+#### Profile Management
+
+**List All Profiles:**
+```bash
+curl http://localhost:8000/profiles
+```
+
+**Get Profile Details:**
+```bash
+curl http://localhost:8000/profiles/gpu-hq
+```
+
+**Create Profile:**
+```bash
+curl -X POST http://localhost:8000/profiles \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-profile", "options": {"vo": "gpu", "hwdec": "auto"}}'
+```
+
+**Update Profile:**
+```bash
+curl -X PUT http://localhost:8000/profiles/my-profile \
+  -H "Content-Type: application/json" \
+  -d '{"options": {"vo": "sdl"}}'
+```
+
+**Delete Profile:**
+```bash
+curl -X DELETE http://localhost:8000/profiles/my-profile
+```
+
+**Apply Profile to Instance:**
+```bash
+curl -X POST http://localhost:8000/mpv/mpv-0/profile?profile_name=gpu-hq
+```
+
+#### Playlist File Management
+
+**List All Playlists:**
+```bash
+curl http://localhost:8000/playlists
+```
+
+**Get Playlist Contents:**
+```bash
+curl http://localhost:8000/playlists/favorites
+```
+
+**Create Playlist:**
+```bash
+curl -X POST http://localhost:8000/playlists \
+  -H "Content-Type: application/json" \
+  -d '{"name": "new-playlist", "entries": [{"path": "/media/video1.mp4", "title": "Video 1"}]}'
+```
+
+**Update Playlist (append):**
+```bash
+curl -X PUT http://localhost:8000/playlists/favorites \
+  -H "Content-Type: application/json" \
+  -d '{"entries": [{"path": "/media/video2.mp4"}], "replace": false}'
+```
+
+**Update Playlist (replace):**
+```bash
+curl -X PUT http://localhost:8000/playlists/favorites \
+  -H "Content-Type: application/json" \
+  -d '{"entries": [{"path": "/media/new.mp4"}], "replace": true}'
+```
+
+**Delete Playlist:**
+```bash
+curl -X DELETE http://localhost:8000/playlists/favorites
+```
+
 ### gRPC API
 
 See [mpv_control.proto](mpv_controller/mpv_control.proto) for service definition.
@@ -295,6 +428,9 @@ See [config.example.yaml](config.example.yaml) for detailed configuration option
 - **server**: REST/gRPC port and bind settings
 - **logging**: Log level and optional file output
 - **socket**: Timeout, retry, and availability check settings
+- **paths**: File paths for profiles and playlists
+  - `profiles_config_path`: Path to mpv profiles configuration file (required for profile management)
+  - `playlist_folder`: Path to folder containing .m3u playlist files (required for playlist management)
 
 ## Error Handling
 
@@ -316,6 +452,12 @@ Error codes:
 - `SOCKET_CONNECTION_ERROR` (503): Cannot connect to socket
 - `COMMAND_EXECUTION_ERROR` (500): Command failed
 - `VALIDATION_ERROR` (400): Invalid request
+- `PROFILE_NOT_FOUND` (404): Profile doesn't exist
+- `PROFILE_EXISTS` (409): Profile already exists
+- `PROFILE_CONFIG_ERROR` (503): Profile configuration not set up
+- `PLAYLIST_NOT_FOUND` (404): Playlist doesn't exist
+- `PLAYLIST_EXISTS` (409): Playlist already exists
+- `PLAYLIST_CONFIG_ERROR` (503): Playlist configuration not set up
 
 ## Documentation
 
