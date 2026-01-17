@@ -6,7 +6,7 @@
   // GitHub: "ghcr.io/jamesbrayton/james-dev:python"
   // Build the image from the Dockerfile in this folder
   //"build": { "dockerfile": "Dockerfile" },
-  "image": "ghcr.io/jamesbrayton/james-dev:python",
+  "image": "ghcr.io/jamesbrayton/james-dev:base",
 
   // Use a named volume instead of your host folder
   "workspaceFolder": "/workspace",
@@ -26,8 +26,8 @@
     "PATH":"${containerEnv:HOME}/.local/bin:${containerEnv:PATH}"
   },
 
-  // Minimal post-create (everything is pre-installed)
-  "postCreateCommand": "echo '🚀 development environment ready!'",
+  // Install ClaudeCode CLI so that we get the latest version
+  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash",
 
   "features": {
   },
