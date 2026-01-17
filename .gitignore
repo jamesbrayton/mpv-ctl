@@ -47,6 +47,8 @@ htmlcov/
 .env
 .env.local
 
+.DS_Store
+
 # Logs
 *.log
 
