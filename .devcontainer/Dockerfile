@@ -1,6 +1,6 @@
 # Dockerfile for Development Environment
-# FROM ubuntu:noble
-FROM debian:trixie
+FROM ubuntu:noble
+# FROM debian:trixie
 
 # Metadata
 LABEL maintainer="jamesgbrayton@gmail.com"
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     gnupg \
-    #software-properties-common \
+    software-properties-common \
     ncurses-bin \
     zsh \
     fonts-powerline \
@@ -43,8 +43,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tree \
     rsync \
     libnss3 \
+    nodejs \
+    npm \
+    python3 \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
+    && ln -s /usr/bin/python3 /usr/bin/python \
     && locale-gen en_US.UTF-8
 
 # Configure terminal environment for remote development
@@ -67,26 +73,12 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install Node.js (LTS) for MCP servers and npx
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nodejs \
-    npm \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
 # Install uv (modern Python package manager)
 # Copy from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# Install Python 3.13 using uv so that we have a hot loaded python environment
 RUN uv python install 3.13
-
-# Install Python 3 and pip
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    && rm -rf /var/lib/apt/lists/* && \
-    ln -s /usr/bin/python3 /usr/bin/python
 
 # Install Pyright language server globally
 RUN npm install -g pyright
@@ -107,6 +99,9 @@ WORKDIR /home/$USERNAME
 # Install oh-my-zsh
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended && \
     sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/g' /home/$USERNAME/.zshrc
+
+# Install Claude CLI
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # Set up environment variables in .zshrc
 RUN echo "export PATH=$PATH:\$HOME/.local/bin:\$HOME/.cargo/bin" >> /home/$USERNAME/.zshrc

@@ -25,9 +25,11 @@
     "GITHUB_PERSONAL_ACCESS_TOKEN":"${localEnv:GITHUB_TOKEN}",
     "PATH":"${containerEnv:HOME}/.local/bin:${containerEnv:PATH}"
   },
-
-  // Install ClaudeCode CLI so that we get the latest version
-  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash",
+  
+  //  "initializeCommand": "echo Initializing Dev Container... ", 
+  
+  // Should not need anything else here as image is pre-configured
+  "postCreateCommand": " Dev environment setup complete. ",
 
   "features": {
   },
