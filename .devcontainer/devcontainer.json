@@ -29,7 +29,7 @@
   //  "initializeCommand": "echo Initializing Dev Container... ", 
   
   // Should not need anything else here as image is pre-configured
-  "postCreateCommand": " Dev environment setup complete. ",
+  "postCreateCommand": "echo '🚀 Development environment ready!'",
 
   "features": {
   },
