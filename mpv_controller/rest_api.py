@@ -3,7 +3,7 @@
 from typing import Any
 
 import structlog
-from fastapi import FastAPI, HTTPException, Path as PathParam, status
+from fastapi import FastAPI, HTTPException, Path as PathParam, Query, status
 from fastapi.responses import JSONResponse
 
 from .config import Config
@@ -901,17 +901,17 @@ def create_rest_app(
     )
     async def apply_profile(
         instance_id: str = PathParam(..., description="ID of the mpv instance"),
-        name: str = PathParam(..., description="Name of the profile to apply", alias="profile_name"),
+        profile_name: str = Query(..., description="Name of the profile to apply"),
     ):
         """Apply a profile to an mpv instance."""
-        logger.info("Apply profile", instance_id=instance_id, profile=name)
+        logger.info("Apply profile", instance_id=instance_id, profile=profile_name)
 
         # Verify profile exists first
-        profile_manager.get_profile(name)
+        profile_manager.get_profile(profile_name)
 
         result = socket_manager.send_command(
             instance_id,
-            ["apply-profile", name],
+            ["apply-profile", profile_name],
         )
 
         state = socket_manager.get_standard_state(instance_id)

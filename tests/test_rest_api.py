@@ -663,6 +663,64 @@ class TestProfileEndpoints:
         response = client.get("/profiles/test-profile")
         assert response.status_code == 404
 
+    def test_create_profile_already_exists(self, client):
+        """Test creating a profile that already exists."""
+        # Create profile first
+        client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "gpu"}}
+        )
+
+        # Try to create same profile again
+        response = client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "sdl"}}
+        )
+        assert response.status_code == 409
+        data = response.json()
+        assert data["error"]["code"] == "PROFILE_EXISTS"
+
+
+class TestApplyProfileEndpoint:
+    """Tests for applying profile to mpv instance."""
+
+    def test_apply_profile(self, client, socket_manager):
+        """Test applying a profile to an mpv instance."""
+        # Create profile first
+        client.post(
+            "/profiles",
+            json={"name": "test-profile", "options": {"vo": "gpu"}}
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+            }
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile",
+            params={"profile_name": "test-profile"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+
+    def test_apply_profile_not_found(self, client, socket_manager):
+        """Test applying a non-existent profile."""
+        response = client.post(
+            "/mpv/mpv-0/profile",
+            params={"profile_name": "nonexistent"}
+        )
+        assert response.status_code == 404
+
 
 class TestPlaylistFileEndpoints:
     """Tests for playlist file management endpoints."""

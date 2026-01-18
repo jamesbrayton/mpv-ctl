@@ -68,6 +68,27 @@ This will:
 - Set up the systemd service
 - Create a config template at `~/.config/mpv-controller/config.yaml`
 
+### Upgrading
+
+To upgrade an existing installation:
+
+```bash
+# Interactive upgrade (will prompt for confirmation)
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash
+
+# Non-interactive upgrade (for scripts)
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- main --upgrade
+
+# Upgrade to specific version
+curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.sh | bash -s -- v2.0.0 --upgrade
+```
+
+The upgrade process will:
+- Stop the running service (if active)
+- Remove the old virtual environment
+- Install the new version
+- Preserve your configuration file
+
 ### Manual Installation
 
 #### 1. Install uv
