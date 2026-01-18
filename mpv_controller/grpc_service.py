@@ -13,6 +13,7 @@ from .mpv_control_pb2 import (
     CommandResult,
     ErrorDetail,
     HealthCheckResponse,
+    MpvPlaylistItem,
     MpvState,
     PropertyResponse,
 )
@@ -63,7 +64,7 @@ class MpvControllerService(MpvControllerServicer):
             MpvState protobuf message.
         """
         proto_state = MpvState()
-        
+
         if state.pause is not None:
             proto_state.pause = state.pause
         if state.time_pos is not None:
@@ -74,7 +75,25 @@ class MpvControllerService(MpvControllerServicer):
             proto_state.filename = state.filename
         if state.volume is not None:
             proto_state.volume = state.volume
-        
+        if state.speed is not None:
+            proto_state.speed = state.speed
+        if state.mute is not None:
+            proto_state.mute = state.mute
+        if state.playlist is not None:
+            for item in state.playlist:
+                proto_item = MpvPlaylistItem(filename=item.filename)
+                if item.current is not None:
+                    proto_item.current = item.current
+                if item.playing is not None:
+                    proto_item.playing = item.playing
+                if item.title is not None:
+                    proto_item.title = item.title
+                proto_state.playlist.append(proto_item)
+        if state.glsl_shaders is not None:
+            proto_state.glsl_shaders.extend(state.glsl_shaders)
+        if state.media_title is not None:
+            proto_state.media_title = state.media_title
+
         return proto_state
 
     def Pause(self, request, context):

@@ -28,7 +28,18 @@ from .models import (
 logger = structlog.get_logger()
 
 # Standard properties to fetch after commands
-STANDARD_PROPERTIES = ["pause", "time-pos", "duration", "filename", "volume"]
+STANDARD_PROPERTIES = [
+    "pause",
+    "time-pos",
+    "duration",
+    "filename",
+    "volume",
+    "speed",
+    "mute",
+    "playlist",
+    "glsl-shaders",
+    "media-title",
+]
 
 
 class MpvSocketManager:

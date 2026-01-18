@@ -105,6 +105,31 @@ class ErrorResponse(BaseModel):
     )
 
 
+class MpvPlaylistItem(BaseModel):
+    """A single item in the mpv playlist."""
+
+    filename: str = Field(
+        ...,
+        description="Path or URL of the media file",
+        examples=["/path/to/video.mp4", "https://example.com/stream.m3u8"],
+    )
+    current: Optional[bool] = Field(
+        None,
+        description="Whether this is the current playlist item",
+        examples=[True, False],
+    )
+    playing: Optional[bool] = Field(
+        None,
+        description="Whether this item is currently playing",
+        examples=[True, False],
+    )
+    title: Optional[str] = Field(
+        None,
+        description="Title of the media if available",
+        examples=["My Video"],
+    )
+
+
 class MpvState(BaseModel):
     """State information from mpv instance."""
 
@@ -132,6 +157,30 @@ class MpvState(BaseModel):
         None,
         description="Current volume level (0-100)",
         examples=[75.0],
+    )
+    speed: Optional[float] = Field(
+        None,
+        description="Current playback speed multiplier",
+        examples=[1.0, 1.5, 2.0],
+    )
+    mute: Optional[bool] = Field(
+        None,
+        description="Whether audio is muted",
+        examples=[True, False],
+    )
+    playlist: Optional[list[MpvPlaylistItem]] = Field(
+        None,
+        description="Current playlist contents",
+    )
+    glsl_shaders: Optional[list[str]] = Field(
+        None,
+        description="List of GLSL shaders currently applied",
+        examples=[["/path/to/shader1.glsl", "/path/to/shader2.glsl"]],
+    )
+    media_title: Optional[str] = Field(
+        None,
+        description="Title of the current media (may differ from filename)",
+        examples=["Movie Title", "Stream Name"],
     )
 
 

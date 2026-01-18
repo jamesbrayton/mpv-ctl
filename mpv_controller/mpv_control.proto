@@ -82,6 +82,14 @@ message CommandResult {
     string error_message = 3;
 }
 
+// A single item in the mpv playlist
+message MpvPlaylistItem {
+    string filename = 1;
+    optional bool current = 2;
+    optional bool playing = 3;
+    optional string title = 4;
+}
+
 // mpv instance state
 message MpvState {
     optional bool pause = 1;
@@ -89,6 +97,11 @@ message MpvState {
     optional double duration = 3;
     optional string filename = 4;
     optional double volume = 5;
+    optional double speed = 6;
+    optional bool mute = 7;
+    repeated MpvPlaylistItem playlist = 8;
+    repeated string glsl_shaders = 9;
+    optional string media_title = 10;
 }
 
 // Response from command execution
