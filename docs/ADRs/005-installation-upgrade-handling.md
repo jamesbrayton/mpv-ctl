@@ -40,6 +40,12 @@ The install script detects existing installations by checking for the installati
 - New config options can be added manually by users
 - Example config shows all available options for reference
 
+### Missing Config Section Detection
+After upgrade, the script checks if `config.yaml` is missing new sections (e.g., `paths:`):
+- If missing, displays a warning with exact YAML to add
+- Includes the new section in the "Next steps" instructions
+- Does not auto-modify the config (preserves user's formatting and comments)
+
 ### Service Handling
 - Service is stopped before upgrade to prevent issues with changed dependencies
 - User must manually restart the service after upgrade

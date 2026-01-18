@@ -159,10 +159,34 @@ echo "Installed version: ${VERSION}"
 echo
 
 if [ "$UPGRADE" = true ]; then
+    # Check for missing config sections
+    MISSING_CONFIG=false
+    if [ -f "${CONFIG_DIR}/config.yaml" ]; then
+        if ! grep -q "^paths:" "${CONFIG_DIR}/config.yaml" 2>/dev/null; then
+            MISSING_CONFIG=true
+            echo -e "${YELLOW}⚠${NC}  Your config.yaml is missing the 'paths' section added in this version."
+            echo "    To use profile and playlist management features, add to ${CONFIG_DIR}/config.yaml:"
+            echo ""
+            echo "    paths:"
+            echo "      # Required for profile management"
+            echo "      profiles_config_path: ~/.config/mpv/profiles.conf"
+            echo "      # Required for playlist management"
+            echo "      playlist_folder: ~/playlists"
+            echo ""
+        fi
+    fi
+
     echo "Next steps:"
-    echo "  1. Start service:      systemctl --user start mpv-controller"
-    echo "  2. Check status:       systemctl --user status mpv-controller"
-    echo "  3. View logs:          journalctl --user -u mpv-controller -f"
+    if [ "$MISSING_CONFIG" = true ]; then
+        echo "  1. Update configuration with new sections (see above)"
+        echo "  2. Start service:      systemctl --user start mpv-controller"
+        echo "  3. Check status:       systemctl --user status mpv-controller"
+        echo "  4. View logs:          journalctl --user -u mpv-controller -f"
+    else
+        echo "  1. Start service:      systemctl --user start mpv-controller"
+        echo "  2. Check status:       systemctl --user status mpv-controller"
+        echo "  3. View logs:          journalctl --user -u mpv-controller -f"
+    fi
 else
     echo "Next steps:"
     echo "  1. Edit configuration: ${CONFIG_DIR}/config.yaml"
