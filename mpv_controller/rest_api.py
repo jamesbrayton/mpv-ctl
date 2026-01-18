@@ -643,6 +643,8 @@ def create_rest_app(
         )
 
         state = socket_manager.get_standard_state(instance_id)
+        # frame-step always pauses, but mpv may not have updated the state yet
+        state.pause = True
 
         return CommandResponse(
             command_result=CommandResult(
@@ -678,6 +680,8 @@ def create_rest_app(
         )
 
         state = socket_manager.get_standard_state(instance_id)
+        # frame-back-step always pauses, but mpv may not have updated the state yet
+        state.pause = True
 
         return CommandResponse(
             command_result=CommandResult(

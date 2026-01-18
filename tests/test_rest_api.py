@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from mpv_controller.config import Config, MpvInstance, PathSettings, ServerSettings, SocketSettings
 from mpv_controller.models import (
     InstanceNotFoundError,
+    MpvState,
     PlaylistEntry,
     ProfileInfo,
     SocketConnectionError,
@@ -487,40 +488,46 @@ class TestFrameNavigationEndpoints:
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
         )
+        # Return pause=False to simulate race condition where mpv hasn't updated yet
         socket_manager.get_standard_state = Mock(
-            return_value={
-                "pause": True,
-                "time_pos": 120.5,
-                "duration": 300.0,
-                "volume": 100.0,
-                "filename": "test.mp4",
-            }
+            return_value=MpvState(
+                pause=False,
+                time_pos=120.5,
+                duration=300.0,
+                volume=100.0,
+                filename="test.mp4",
+            )
         )
 
         response = client.post("/mpv/mpv-0/frame/forward")
         assert response.status_code == 200
         data = response.json()
         assert data["command_result"]["success"] is True
+        # Verify pause is always True after frame-step (regardless of what mpv reports)
+        assert data["state"]["pause"] is True
 
     def test_frame_backward(self, client, socket_manager):
         """Test going back one frame."""
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
         )
+        # Return pause=False to simulate race condition where mpv hasn't updated yet
         socket_manager.get_standard_state = Mock(
-            return_value={
-                "pause": True,
-                "time_pos": 120.4,
-                "duration": 300.0,
-                "volume": 100.0,
-                "filename": "test.mp4",
-            }
+            return_value=MpvState(
+                pause=False,
+                time_pos=120.4,
+                duration=300.0,
+                volume=100.0,
+                filename="test.mp4",
+            )
         )
 
         response = client.post("/mpv/mpv-0/frame/backward")
         assert response.status_code == 200
         data = response.json()
         assert data["command_result"]["success"] is True
+        # Verify pause is always True after frame-back-step (regardless of what mpv reports)
+        assert data["state"]["pause"] is True
 
 
 class TestPlaylistNavigationEndpoints:
