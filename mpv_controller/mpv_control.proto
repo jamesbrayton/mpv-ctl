@@ -9,14 +9,17 @@ service MpvController {
     rpc Play(InstanceRequest) returns (CommandResponse);
     rpc Seek(SeekRequest) returns (CommandResponse);
     rpc SetVolume(VolumeRequest) returns (CommandResponse);
-    
+    rpc VolumeUp(InstanceRequest) returns (CommandResponse);
+    rpc VolumeDown(InstanceRequest) returns (CommandResponse);
+    rpc Mute(InstanceRequest) returns (CommandResponse);
+
     // Property access
     rpc GetProperty(PropertyRequest) returns (PropertyResponse);
     rpc GetStatus(InstanceRequest) returns (CommandResponse);
-    
+
     // Raw command execution
     rpc SendRawCommand(RawCommandRequest) returns (CommandResponse);
-    
+
     // Health checks
     rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
 }

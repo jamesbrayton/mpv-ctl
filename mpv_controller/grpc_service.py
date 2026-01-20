@@ -199,14 +199,14 @@ class MpvControllerService(MpvControllerServicer):
                 instance_id=request.instance_id,
                 volume=request.volume,
             )
-            
+
             result = self.socket_manager.send_command(
                 request.instance_id,
                 ["set_property", "volume", request.volume],
             )
-            
+
             state = self.socket_manager.get_standard_state(request.instance_id)
-            
+
             return CommandResponse(
                 command_result=CommandResult(
                     success=result.get("error") == "success",
@@ -218,6 +218,93 @@ class MpvControllerService(MpvControllerServicer):
             )
         except MpvControllerError as e:
             logger.error("gRPC SetVolume error", error=str(e), code=e.code)
+            return CommandResponse(
+                command_result=CommandResult(success=False),
+                instance_id=request.instance_id,
+                error=self._create_error_detail(e),
+            )
+
+    def VolumeUp(self, request, context):
+        """Increase volume by 5."""
+        try:
+            logger.info("gRPC VolumeUp command", instance_id=request.instance_id)
+
+            result = self.socket_manager.send_command(
+                request.instance_id,
+                ["add", "volume", 5],
+            )
+
+            state = self.socket_manager.get_standard_state(request.instance_id)
+
+            return CommandResponse(
+                command_result=CommandResult(
+                    success=result.get("error") == "success",
+                    data_json=json.dumps(result.get("data")),
+                    error_message=result.get("error") if result.get("error") != "success" else "",
+                ),
+                state=self._mpv_state_to_proto(state),
+                instance_id=request.instance_id,
+            )
+        except MpvControllerError as e:
+            logger.error("gRPC VolumeUp error", error=str(e), code=e.code)
+            return CommandResponse(
+                command_result=CommandResult(success=False),
+                instance_id=request.instance_id,
+                error=self._create_error_detail(e),
+            )
+
+    def VolumeDown(self, request, context):
+        """Decrease volume by 5."""
+        try:
+            logger.info("gRPC VolumeDown command", instance_id=request.instance_id)
+
+            result = self.socket_manager.send_command(
+                request.instance_id,
+                ["add", "volume", -5],
+            )
+
+            state = self.socket_manager.get_standard_state(request.instance_id)
+
+            return CommandResponse(
+                command_result=CommandResult(
+                    success=result.get("error") == "success",
+                    data_json=json.dumps(result.get("data")),
+                    error_message=result.get("error") if result.get("error") != "success" else "",
+                ),
+                state=self._mpv_state_to_proto(state),
+                instance_id=request.instance_id,
+            )
+        except MpvControllerError as e:
+            logger.error("gRPC VolumeDown error", error=str(e), code=e.code)
+            return CommandResponse(
+                command_result=CommandResult(success=False),
+                instance_id=request.instance_id,
+                error=self._create_error_detail(e),
+            )
+
+    def Mute(self, request, context):
+        """Toggle mute state."""
+        try:
+            logger.info("gRPC Mute command", instance_id=request.instance_id)
+
+            result = self.socket_manager.send_command(
+                request.instance_id,
+                ["cycle", "mute"],
+            )
+
+            state = self.socket_manager.get_standard_state(request.instance_id)
+
+            return CommandResponse(
+                command_result=CommandResult(
+                    success=result.get("error") == "success",
+                    data_json=json.dumps(result.get("data")),
+                    error_message=result.get("error") if result.get("error") != "success" else "",
+                ),
+                state=self._mpv_state_to_proto(state),
+                instance_id=request.instance_id,
+            )
+        except MpvControllerError as e:
+            logger.error("gRPC Mute error", error=str(e), code=e.code)
             return CommandResponse(
                 command_result=CommandResult(success=False),
                 instance_id=request.instance_id,

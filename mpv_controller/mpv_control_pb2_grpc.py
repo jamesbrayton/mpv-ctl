@@ -55,6 +55,21 @@ class MpvControllerStub(object):
                 request_serializer=mpv__control__pb2.VolumeRequest.SerializeToString,
                 response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
+        self.VolumeUp = channel.unary_unary(
+                '/mpv_controller.MpvController/VolumeUp',
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
+                _registered_method=True)
+        self.VolumeDown = channel.unary_unary(
+                '/mpv_controller.MpvController/VolumeDown',
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
+                _registered_method=True)
+        self.Mute = channel.unary_unary(
+                '/mpv_controller.MpvController/Mute',
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
+                _registered_method=True)
         self.GetProperty = channel.unary_unary(
                 '/mpv_controller.MpvController/GetProperty',
                 request_serializer=mpv__control__pb2.PropertyRequest.SerializeToString,
@@ -101,6 +116,24 @@ class MpvControllerServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SetVolume(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def VolumeUp(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def VolumeDown(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Mute(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -154,6 +187,21 @@ def add_MpvControllerServicer_to_server(servicer, server):
             'SetVolume': grpc.unary_unary_rpc_method_handler(
                     servicer.SetVolume,
                     request_deserializer=mpv__control__pb2.VolumeRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
+            ),
+            'VolumeUp': grpc.unary_unary_rpc_method_handler(
+                    servicer.VolumeUp,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
+            ),
+            'VolumeDown': grpc.unary_unary_rpc_method_handler(
+                    servicer.VolumeDown,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
+            ),
+            'Mute': grpc.unary_unary_rpc_method_handler(
+                    servicer.Mute,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
                     response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'GetProperty': grpc.unary_unary_rpc_method_handler(
@@ -285,6 +333,87 @@ class MpvController(object):
             target,
             '/mpv_controller.MpvController/SetVolume',
             mpv__control__pb2.VolumeRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def VolumeUp(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mpv_controller.MpvController/VolumeUp',
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def VolumeDown(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mpv_controller.MpvController/VolumeDown',
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Mute(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mpv_controller.MpvController/Mute',
+            mpv__control__pb2.InstanceRequest.SerializeToString,
             mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,

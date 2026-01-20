@@ -358,16 +358,121 @@ def create_rest_app(
             instance_id=instance_id,
             volume=volume_request.volume,
         )
-        
+
         # Execute volume command
         result = socket_manager.send_command(
             instance_id,
             ["set_property", "volume", volume_request.volume],
         )
-        
+
         # Get updated state
         state = socket_manager.get_standard_state(instance_id)
-        
+
+        return CommandResponse(
+            command_result=CommandResult(
+                success=result.get("error") == "success",
+                data=result.get("data"),
+                error=result.get("error") if result.get("error") != "success" else None,
+            ),
+            state=state,
+            instance_id=instance_id,
+        )
+
+    @app.post(
+        "/mpv/{instance_id}/volume/up",
+        response_model=CommandResponse,
+        tags=["Playback Control"],
+        summary="Increase volume",
+        description="Increases the volume by 5.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance not found"},
+            504: {"model": ErrorResponse, "description": "Socket timeout"},
+            503: {"model": ErrorResponse, "description": "Socket connection error"},
+        },
+    )
+    async def volume_up(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+    ):
+        """Increase volume by 5."""
+        logger.info("Volume up command", instance_id=instance_id)
+
+        result = socket_manager.send_command(
+            instance_id,
+            ["add", "volume", 5],
+        )
+
+        state = socket_manager.get_standard_state(instance_id)
+
+        return CommandResponse(
+            command_result=CommandResult(
+                success=result.get("error") == "success",
+                data=result.get("data"),
+                error=result.get("error") if result.get("error") != "success" else None,
+            ),
+            state=state,
+            instance_id=instance_id,
+        )
+
+    @app.post(
+        "/mpv/{instance_id}/volume/down",
+        response_model=CommandResponse,
+        tags=["Playback Control"],
+        summary="Decrease volume",
+        description="Decreases the volume by 5.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance not found"},
+            504: {"model": ErrorResponse, "description": "Socket timeout"},
+            503: {"model": ErrorResponse, "description": "Socket connection error"},
+        },
+    )
+    async def volume_down(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+    ):
+        """Decrease volume by 5."""
+        logger.info("Volume down command", instance_id=instance_id)
+
+        result = socket_manager.send_command(
+            instance_id,
+            ["add", "volume", -5],
+        )
+
+        state = socket_manager.get_standard_state(instance_id)
+
+        return CommandResponse(
+            command_result=CommandResult(
+                success=result.get("error") == "success",
+                data=result.get("data"),
+                error=result.get("error") if result.get("error") != "success" else None,
+            ),
+            state=state,
+            instance_id=instance_id,
+        )
+
+    @app.post(
+        "/mpv/{instance_id}/mute",
+        response_model=CommandResponse,
+        tags=["Playback Control"],
+        summary="Toggle mute",
+        description="Toggles the mute state of the specified mpv instance.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance not found"},
+            504: {"model": ErrorResponse, "description": "Socket timeout"},
+            503: {"model": ErrorResponse, "description": "Socket connection error"},
+        },
+    )
+    async def mute(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+    ):
+        """Toggle mute state."""
+        logger.info("Mute command", instance_id=instance_id)
+
+        result = socket_manager.send_command(
+            instance_id,
+            ["cycle", "mute"],
+        )
+
+        state = socket_manager.get_standard_state(instance_id)
+
         return CommandResponse(
             command_result=CommandResult(
                 success=result.get("error") == "success",
