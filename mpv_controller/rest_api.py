@@ -509,8 +509,7 @@ def create_rest_app(
         # mpv can return: "inf", "no", False, True, or a number
         # If current value is 'inf', True, or any number > 0, set to 'no'
         # Otherwise, set to 'inf'
-        data = current_value.get("data")
-        new_value = "no" if (data == "inf" or data is True or (isinstance(data, (int, str)) and str(data).isdigit() and int(data) > 0)) else "inf"
+        new_value = "no" if (current_value == "inf" or current_value is True or (isinstance(current_value, (int, str)) and str(current_value).isdigit() and int(current_value) > 0)) else "inf"
         
         result = socket_manager.send_command(
             instance_id,
