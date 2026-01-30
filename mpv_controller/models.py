@@ -182,6 +182,11 @@ class MpvState(BaseModel):
         description="Title of the current media (may differ from filename)",
         examples=["Movie Title", "Stream Name"],
     )
+    loop_file: Optional[str] = Field(
+        None,
+        description="Loop status for current file ('inf' for infinite loop, 'no' for disabled, or a number)",
+        examples=["inf", "no", "3"],
+    )
 
 
 class CommandResult(BaseModel):

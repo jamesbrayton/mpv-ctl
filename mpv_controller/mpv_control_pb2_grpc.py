@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import mpv_control_pb2 as mpv__control__pb2
+import mpv_control_pb2 as mpv__control__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
@@ -67,6 +67,11 @@ class MpvControllerStub(object):
                 _registered_method=True)
         self.Mute = channel.unary_unary(
                 '/mpv_controller.MpvController/Mute',
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
+                _registered_method=True)
+        self.Loop = channel.unary_unary(
+                '/mpv_controller.MpvController/Loop',
                 request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
                 response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
@@ -139,6 +144,12 @@ class MpvControllerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Loop(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetProperty(self, request, context):
         """Property access
         """
@@ -201,6 +212,11 @@ def add_MpvControllerServicer_to_server(servicer, server):
             ),
             'Mute': grpc.unary_unary_rpc_method_handler(
                     servicer.Mute,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
+            ),
+            'Loop': grpc.unary_unary_rpc_method_handler(
+                    servicer.Loop,
                     request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
                     response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
@@ -413,6 +429,33 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Mute',
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Loop(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mpv_controller.MpvController/Loop',
             mpv__control__pb2.InstanceRequest.SerializeToString,
             mpv__control__pb2.CommandResponse.FromString,
             options,

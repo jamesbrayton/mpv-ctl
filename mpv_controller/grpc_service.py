@@ -93,6 +93,8 @@ class MpvControllerService(MpvControllerServicer):
             proto_state.glsl_shaders.extend(state.glsl_shaders)
         if state.media_title is not None:
             proto_state.media_title = state.media_title
+        if state.loop_file is not None:
+            proto_state.loop_file = state.loop_file
 
         return proto_state
 
@@ -305,6 +307,43 @@ class MpvControllerService(MpvControllerServicer):
             )
         except MpvControllerError as e:
             logger.error("gRPC Mute error", error=str(e), code=e.code)
+            return CommandResponse(
+                command_result=CommandResult(success=False),
+                instance_id=request.instance_id,
+                error=self._create_error_detail(e),
+            )
+
+    def Loop(self, request, context):
+        """Toggle loop state for current file."""
+        try:
+            logger.info("gRPC Loop command", instance_id=request.instance_id)
+
+            # Get current loop-file value
+            current_value = self.socket_manager.get_property(request.instance_id, "loop-file")
+            
+            # Toggle between 'inf' and 'no'
+            # If current value is 'inf' or any number, set to 'no'
+            # Otherwise, set to 'inf'
+            new_value = "no" if current_value.get("data") == "inf" or (current_value.get("data") not in ["no", None]) else "inf"
+
+            result = self.socket_manager.send_command(
+                request.instance_id,
+                ["set_property", "loop-file", new_value],
+            )
+
+            state = self.socket_manager.get_standard_state(request.instance_id)
+
+            return CommandResponse(
+                command_result=CommandResult(
+                    success=result.get("error") == "success",
+                    data_json=json.dumps(result.get("data")),
+                    error_message=result.get("error") if result.get("error") != "success" else "",
+                ),
+                state=self._mpv_state_to_proto(state),
+                instance_id=request.instance_id,
+            )
+        except MpvControllerError as e:
+            logger.error("gRPC Loop error", error=str(e), code=e.code)
             return CommandResponse(
                 command_result=CommandResult(success=False),
                 instance_id=request.instance_id,

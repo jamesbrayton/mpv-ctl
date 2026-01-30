@@ -483,6 +483,50 @@ def create_rest_app(
             instance_id=instance_id,
         )
     
+    @app.post(
+        "/mpv/{instance_id}/loop",
+        response_model=CommandResponse,
+        tags=["Playback Control"],
+        summary="Toggle loop for current file",
+        description="Toggles the loop state for the currently playing file between infinite loop and no loop. "
+                    "This does not affect playlist looping.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance not found"},
+            504: {"model": ErrorResponse, "description": "Socket timeout"},
+            503: {"model": ErrorResponse, "description": "Socket connection error"},
+        },
+    )
+    async def loop(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+    ):
+        """Toggle loop state for current file."""
+        logger.info("Loop toggle command", instance_id=instance_id)
+
+        # Get current loop-file value
+        current_value = socket_manager.get_property(instance_id, "loop-file")
+        
+        # Toggle between 'inf' and 'no'
+        # If current value is 'inf' or any number, set to 'no'
+        # Otherwise, set to 'inf'
+        new_value = "no" if current_value.get("data") == "inf" or (current_value.get("data") not in ["no", None]) else "inf"
+        
+        result = socket_manager.send_command(
+            instance_id,
+            ["set_property", "loop-file", new_value],
+        )
+
+        state = socket_manager.get_standard_state(instance_id)
+
+        return CommandResponse(
+            command_result=CommandResult(
+                success=result.get("error") == "success",
+                data=result.get("data"),
+                error=result.get("error") if result.get("error") != "success" else None,
+            ),
+            state=state,
+            instance_id=instance_id,
+        )
+    
     @app.get(
         "/mpv/{instance_id}/properties",
         tags=["Properties"],

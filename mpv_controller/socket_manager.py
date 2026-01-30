@@ -39,6 +39,7 @@ STANDARD_PROPERTIES = [
     "playlist",
     "glsl-shaders",
     "media-title",
+    "loop-file",
 ]
 
 

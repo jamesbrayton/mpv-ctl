@@ -215,6 +215,95 @@ class TestPlaybackControl:
         assert data["command_result"]["success"] is True
         assert data["state"]["volume"] == 75.0
 
+    def test_loop_toggle_to_no(self, client, socket_manager):
+        """Test loop endpoint toggling from 'inf' to 'no'."""
+        # Mock get_property to return current value
+        socket_manager.get_property = Mock(
+            return_value={"error": "success", "data": "inf"}
+        )
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+                "loop_file": "no",
+            }
+        )
+        
+        response = client.post("/mpv/mpv-0/loop")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["loop_file"] == "no"
+        
+        # Verify get_property was called to get current value
+        socket_manager.get_property.assert_called_once_with("mpv-0", "loop-file")
+        # Verify send_command was called with set_property to "no"
+        socket_manager.send_command.assert_called_once_with("mpv-0", ["set_property", "loop-file", "no"])
+
+    def test_loop_toggle_to_inf(self, client, socket_manager):
+        """Test loop endpoint toggling from 'no' to 'inf'."""
+        # Mock get_property to return current value
+        socket_manager.get_property = Mock(
+            return_value={"error": "success", "data": "no"}
+        )
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+                "loop_file": "inf",
+            }
+        )
+        
+        response = client.post("/mpv/mpv-0/loop")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["loop_file"] == "inf"
+        
+        # Verify send_command was called with set_property to "inf"
+        socket_manager.send_command.assert_called_once_with("mpv-0", ["set_property", "loop-file", "inf"])
+
+    def test_loop_toggle_from_number(self, client, socket_manager):
+        """Test loop endpoint toggling from a number to 'no'."""
+        # Mock get_property to return a numeric value
+        socket_manager.get_property = Mock(
+            return_value={"error": "success", "data": "3"}
+        )
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+                "loop_file": "no",
+            }
+        )
+        
+        response = client.post("/mpv/mpv-0/loop")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["loop_file"] == "no"
+        
+        # Verify send_command was called with set_property to "no" when toggling from a number
+        socket_manager.send_command.assert_called_once_with("mpv-0", ["set_property", "loop-file", "no"])
+
 
 class TestPropertiesEndpoints:
     """Tests for properties endpoints."""

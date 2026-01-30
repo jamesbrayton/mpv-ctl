@@ -12,6 +12,7 @@ service MpvController {
     rpc VolumeUp(InstanceRequest) returns (CommandResponse);
     rpc VolumeDown(InstanceRequest) returns (CommandResponse);
     rpc Mute(InstanceRequest) returns (CommandResponse);
+    rpc Loop(InstanceRequest) returns (CommandResponse);
 
     // Property access
     rpc GetProperty(PropertyRequest) returns (PropertyResponse);
@@ -105,6 +106,7 @@ message MpvState {
     repeated MpvPlaylistItem playlist = 8;
     repeated string glsl_shaders = 9;
     optional string media_title = 10;
+    optional string loop_file = 11;
 }
 
 // Response from command execution
