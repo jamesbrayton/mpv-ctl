@@ -94,7 +94,12 @@ class MpvControllerService(MpvControllerServicer):
         if state.media_title is not None:
             proto_state.media_title = state.media_title
         if state.loop_file is not None:
-            proto_state.loop_file = state.loop_file
+            # Convert loop_file to string for protobuf
+            # mpv can return: "inf", "no", False, True, or a number
+            if isinstance(state.loop_file, bool):
+                proto_state.loop_file = "no" if state.loop_file is False else "inf"
+            else:
+                proto_state.loop_file = str(state.loop_file)
 
         return proto_state
 
@@ -322,9 +327,11 @@ class MpvControllerService(MpvControllerServicer):
             current_value = self.socket_manager.get_property(request.instance_id, "loop-file")
             
             # Toggle between 'inf' and 'no'
-            # If current value is 'inf' or any number, set to 'no'
+            # mpv can return: "inf", "no", False, True, or a number
+            # If current value is 'inf', True, or any number > 0, set to 'no'
             # Otherwise, set to 'inf'
-            new_value = "no" if current_value.get("data") == "inf" or (current_value.get("data") not in ["no", None]) else "inf"
+            data = current_value.get("data")
+            new_value = "no" if (data == "inf" or data is True or (isinstance(data, (int, str)) and str(data).isdigit() and int(data) > 0)) else "inf"
 
             result = self.socket_manager.send_command(
                 request.instance_id,

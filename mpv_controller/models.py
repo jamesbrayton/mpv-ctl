@@ -1,7 +1,7 @@
 """Data models and error handling for mpv-controller."""
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -182,10 +182,10 @@ class MpvState(BaseModel):
         description="Title of the current media (may differ from filename)",
         examples=["Movie Title", "Stream Name"],
     )
-    loop_file: Optional[str] = Field(
+    loop_file: Optional[Union[str, bool, int]] = Field(
         None,
-        description="Loop status for current file ('inf' for infinite loop, 'no' for disabled, or a number)",
-        examples=["inf", "no", "3"],
+        description="Loop status for current file ('inf' for infinite loop, 'no' or False for disabled, or a number)",
+        examples=["inf", "no", False, 3],
     )
 
 
