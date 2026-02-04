@@ -334,6 +334,31 @@ class TestPlaybackControl:
         # Verify send_command was called with set_property to "inf" when toggling from False
         socket_manager.send_command.assert_called_once_with("mpv-0", ["set_property", "loop-file", "inf"])
 
+    def test_shuffle_toggle(self, client, socket_manager):
+        """Test shuffle endpoint toggles shuffle state."""
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value={
+                "pause": False,
+                "time_pos": 120.5,
+                "duration": 300.0,
+                "volume": 100.0,
+                "filename": "test.mp4",
+                "shuffle": True,
+            }
+        )
+        
+        response = client.post("/mpv/mpv-0/shuffle")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["shuffle"] is True
+        
+        # Verify send_command was called with cycle shuffle
+        socket_manager.send_command.assert_called_once_with("mpv-0", ["cycle", "shuffle"])
+
 
 class TestPropertiesEndpoints:
     """Tests for properties endpoints."""

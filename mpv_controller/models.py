@@ -187,6 +187,11 @@ class MpvState(BaseModel):
         description="Loop status for current file ('inf' for infinite loop, 'no' or False for disabled, or a number)",
         examples=["inf", "no", False, 3],
     )
+    shuffle: Optional[bool] = Field(
+        None,
+        description="Whether playlist shuffle is enabled",
+        examples=[True, False],
+    )
 
 
 class CommandResult(BaseModel):

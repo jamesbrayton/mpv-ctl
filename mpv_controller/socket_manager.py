@@ -40,6 +40,7 @@ STANDARD_PROPERTIES = [
     "glsl-shaders",
     "media-title",
     "loop-file",
+    "shuffle",
 ]
 
 

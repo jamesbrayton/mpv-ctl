@@ -100,6 +100,8 @@ class MpvControllerService(MpvControllerServicer):
                 proto_state.loop_file = "no" if state.loop_file is False else "inf"
             else:
                 proto_state.loop_file = str(state.loop_file)
+        if state.shuffle is not None:
+            proto_state.shuffle = state.shuffle
 
         return proto_state
 
@@ -351,6 +353,35 @@ class MpvControllerService(MpvControllerServicer):
             )
         except MpvControllerError as e:
             logger.error("gRPC Loop error", error=str(e), code=e.code)
+            return CommandResponse(
+                command_result=CommandResult(success=False),
+                instance_id=request.instance_id,
+                error=self._create_error_detail(e),
+            )
+
+    def Shuffle(self, request, context):
+        """Toggle shuffle state."""
+        try:
+            logger.info("gRPC Shuffle command", instance_id=request.instance_id)
+
+            result = self.socket_manager.send_command(
+                request.instance_id,
+                ["cycle", "shuffle"],
+            )
+
+            state = self.socket_manager.get_standard_state(request.instance_id)
+
+            return CommandResponse(
+                command_result=CommandResult(
+                    success=result.get("error") == "success",
+                    data_json=json.dumps(result.get("data")),
+                    error_message=result.get("error") if result.get("error") != "success" else "",
+                ),
+                state=self._mpv_state_to_proto(state),
+                instance_id=request.instance_id,
+            )
+        except MpvControllerError as e:
+            logger.error("gRPC Shuffle error", error=str(e), code=e.code)
             return CommandResponse(
                 command_result=CommandResult(success=False),
                 instance_id=request.instance_id,

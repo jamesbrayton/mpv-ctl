@@ -528,6 +528,41 @@ def create_rest_app(
             instance_id=instance_id,
         )
     
+    @app.post(
+        "/mpv/{instance_id}/shuffle",
+        response_model=CommandResponse,
+        tags=["Playback Control"],
+        summary="Toggle shuffle",
+        description="Toggles the shuffle state of the current playlist.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance not found"},
+            504: {"model": ErrorResponse, "description": "Socket timeout"},
+            503: {"model": ErrorResponse, "description": "Socket connection error"},
+        },
+    )
+    async def shuffle(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+    ):
+        """Toggle shuffle state."""
+        logger.info("Shuffle toggle command", instance_id=instance_id)
+
+        result = socket_manager.send_command(
+            instance_id,
+            ["cycle", "shuffle"],
+        )
+
+        state = socket_manager.get_standard_state(instance_id)
+
+        return CommandResponse(
+            command_result=CommandResult(
+                success=result.get("error") == "success",
+                data=result.get("data"),
+                error=result.get("error") if result.get("error") != "success" else None,
+            ),
+            state=state,
+            instance_id=instance_id,
+        )
+    
     @app.get(
         "/mpv/{instance_id}/properties",
         tags=["Properties"],
