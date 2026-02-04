@@ -317,6 +317,47 @@ curl -X POST http://localhost:8000/mpv/mpv-0/playlist/switch \
 
 #### Profile Management
 
+Profiles must include metadata fields that control tracking behavior:
+
+**Profile Metadata Requirements:**
+
+All profiles require two metadata fields (mpv ignores these `x-` prefixed fields):
+
+- **x-profile-type**: Type of configuration (`shader` or `setting`)
+  - `shader`: Manages GLSL shaders (glsl-shaders-append, glsl-shaders-clr)
+  - `setting`: Manages other settings (vo, hwdec, vf, af, etc.)
+
+- **x-profile-mode**: Application mode (`reset` or `additive`)
+  - `reset`: Clears all previously applied profiles of the same type
+  - `additive`: Adds to existing profiles of the same type
+
+**Example Profile Configuration:**
+
+```ini
+# Shader profile with reset mode (clears other shaders)
+[anime4k-medium]
+x-profile-type=shader
+x-profile-mode=reset
+profile-desc=Anime4K Medium Quality
+glsl-shaders-clr
+glsl-shaders-append=~~/shaders/Anime4K_Upscale_L.glsl
+glsl-shaders-append=~~/shaders/Anime4K_Auto_Downscale.glsl
+
+# Setting profile with additive mode (stacks with other settings)
+[debanding]
+x-profile-type=setting
+x-profile-mode=additive
+profile-desc=Enable debanding filter
+vf=gradfun=radius=16
+
+# Clear all shaders
+[none]
+x-profile-type=shader
+x-profile-mode=reset
+profile-desc=Clear all shaders
+glsl-shaders-clr
+```
+
 **List All Profiles:**
 ```bash
 curl http://localhost:8000/profiles
@@ -331,14 +372,28 @@ curl http://localhost:8000/profiles/gpu-hq
 ```bash
 curl -X POST http://localhost:8000/profiles \
   -H "Content-Type: application/json" \
-  -d '{"name": "my-profile", "options": {"vo": "gpu", "hwdec": "auto"}}'
+  -d '{
+    "name": "my-profile",
+    "options": {
+      "vo": "gpu",
+      "hwdec": "auto",
+      "x-profile-type": "setting",
+      "x-profile-mode": "reset"
+    }
+  }'
 ```
 
 **Update Profile:**
 ```bash
 curl -X PUT http://localhost:8000/profiles/my-profile \
   -H "Content-Type: application/json" \
-  -d '{"options": {"vo": "sdl"}}'
+  -d '{
+    "options": {
+      "vo": "sdl",
+      "x-profile-type": "setting",
+      "x-profile-mode": "additive"
+    }
+  }'
 ```
 
 **Delete Profile:**
@@ -349,6 +404,18 @@ curl -X DELETE http://localhost:8000/profiles/my-profile
 **Apply Profile to Instance:**
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/profile?profile_name=gpu-hq
+```
+
+The status response includes `applied_profiles` showing which profiles are currently active:
+
+```json
+{
+  "state": {
+    "pause": false,
+    "glsl_shaders": ["/path/to/shader.glsl"],
+    "applied_profiles": ["anime4k-medium", "debanding"]
+  }
+}
 ```
 
 #### Playlist File Management

@@ -2,9 +2,108 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Note**: This file is synchronized with `.github/copilot-instructions.md` and any future `AGENTS.md`. All AI coding assistants follow the same standards. See `docs/ai-development-guide.md` for comprehensive details.
+
 ## Project Overview
 
 mpv-controller is a Python service for controlling multiple mpv media player instances via Unix sockets. It exposes both REST and gRPC APIs for remote control. Designed to run as a systemd user service on the same host as mpv instances, with external access through Kubernetes ingress.
+
+## Development Process & Quality Standards
+
+### Required for ALL Feature/Fix Work
+
+Every feature implementation or bug fix MUST include:
+
+1. **Unit Tests**
+   - Create/update tests for all new/changed functionality
+   - Maintain minimum 80% test coverage across codebase
+   - Run `uv run pytest --cov=mpv_controller --cov-report=term-missing` to verify coverage
+   - Tests must pass before considering work complete
+
+2. **API Consistency**
+   - Changes to REST API endpoints MUST be reflected in gRPC implementation
+   - Both APIs should provide equivalent functionality
+   - Update both `rest_api.py` and `grpc_service.py` in parallel
+
+3. **Protocol Buffer Updates**
+   - Update `mpv_control.proto` when adding/changing gRPC messages
+   - Regenerate Python files (see Development Commands section)
+   - Commit both `.proto` and generated `_pb2.py` files
+
+4. **Version Management**
+   - Increment version for all changes following semantic versioning:
+     - **Patch** (0.2.X): Bug fixes, no API changes
+     - **Minor** (0.X.0): New features, backward-compatible API changes
+     - **Major** (X.0.0): Breaking changes
+   - Update version in ALL locations:
+     - `pyproject.toml`
+     - `mpv_controller/__init__.py`
+     - `rest_api.py` (OpenAPI version)
+
+5. **Documentation**
+   - Update `README.md` if user-facing behavior changes (keep succinct)
+   - Create/update detailed docs in `/docs` for complex topics
+   - Follow documentation style guide (see below)
+
+6. **Feature Planning & Implementation Documentation**
+   - Create feature subfolder: `/docs/features/<feature-name>`
+   - Store ALL feature-related planning/implementation docs in this subfolder:
+     - Planning documents (e.g., `PLAN.md`, `DESIGN.md`)
+     - Implementation guides (e.g., `IMPLEMENTATION.md`)
+     - Feature-specific notes and tracking
+   - Keep root directory clean—NO feature planning docs in root
+   - Preserve feature folders for historical record (do NOT delete after completion)
+   - Example structure:
+     ```
+     /docs/features/profile-tracking/
+       PROFILE_TRACKING_PLAN.md
+       IMPLEMENTATION.md
+       VERIFICATION.md
+     ```
+
+7. **Architectural Decision Records (ADRs)**
+   - Create ADR in `/docs/ADRs` for any design/architecture decisions
+   - Number sequentially (001, 002, etc.)
+   - Keep ADRs concise and focused (see existing ADRs as templates)
+   - If ADR is significantly longer than existing ones, the decision scope is too large—break it up or reevaluate
+
+### Documentation Style Guide
+
+**README.md:**
+- Succinct, to-the-point content
+- Reference `/docs` folder for expanded information
+- Include quick examples and common use cases
+- Keep technical details minimal
+
+**`/docs` Files:**
+1. **State the Focus**: Clear title and purpose statement
+2. **ELI5 Description**: Explain-like-I'm-5 overview for quick understanding
+3. **Detailed Technical Content**: In-depth information, instructions, examples
+
+**ADRs (`/docs/ADRs`):**
+- Short and explicit
+- Follow existing template structure:
+  - **Status**: (Accepted/Proposed/Deprecated)
+  - **Context**: Why the decision is needed
+  - **Decision**: What was decided
+  - **Consequences**: Impacts and trade-offs
+  - **Alternatives Considered**: (if applicable)
+- Use existing ADRs (001-006) as length/style reference
+- If ADR grows too long, reconsider the decision's scope
+
+### Pre-Commit Checklist
+
+Before considering work complete:
+- [ ] Unit tests created/updated and passing
+- [ ] Test coverage ≥80% (check with `--cov` flag)
+- [ ] REST API changes mirrored in gRPC
+- [ ] Protobuf files updated and regenerated (if applicable)
+- [ ] Version incremented in all 3 locations
+- [ ] README.md updated (if user-facing changes)
+- [ ] Detailed docs created/updated in `/docs` (if needed)
+- [ ] Feature planning/implementation docs in `/docs/features/<feature-name>` (if applicable)
+- [ ] ADR created for design decisions
+- [ ] All tests pass: `uv run pytest -v`
 
 ## Development Commands
 
@@ -93,3 +192,13 @@ Custom exceptions inherit from `MpvControllerError` with code, message, and deta
 ## Testing
 
 Tests use pytest with mock-based unit testing (no running mpv required). Test files are in `tests/` directory. Uses `unittest.mock` for socket mocking and `fastapi.testclient.TestClient` for REST API testing.
+
+## Additional Resources
+
+- **Comprehensive AI Development Guide**: See `docs/ai-development-guide.md` for detailed information on:
+  - Availability caching patterns in SocketManager
+  - Standardized error response formats with examples
+  - Systemd service deployment patterns
+  - Complete retry strategy implementation details
+- **GitHub Copilot Instructions**: `.github/copilot-instructions.md` (synchronized with this file)
+- **Architectural Decisions**: `docs/ADRs/` directory
