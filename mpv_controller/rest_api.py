@@ -1161,16 +1161,30 @@ def create_rest_app(
             )
 
         state = socket_manager.get_standard_state(instance_id)
-
-        return CommandResponse(
+        
+        # Check if command failed in mpv
+        command_success = result.get("error") == "success"
+        
+        response = CommandResponse(
             command_result=CommandResult(
-                success=result.get("error") == "success",
+                success=command_success,
                 data=result.get("data"),
-                error=result.get("error") if result.get("error") != "success" else None,
+                error=result.get("error") if not command_success else None,
             ),
             state=state,
             instance_id=instance_id,
         )
+        
+        # Return proper HTTP status code based on command result
+        if not command_success:
+            # Command failed in mpv - return 502 Bad Gateway
+            # (mpv is acting as a backend service that failed)
+            return JSONResponse(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                content=response.model_dump(),
+            )
+        
+        return response
 
     # ==================== Playlist File Management Endpoints ====================
 

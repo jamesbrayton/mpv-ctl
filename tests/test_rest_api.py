@@ -978,7 +978,8 @@ class TestApplyProfileEndpoint:
         response = client.post(
             "/mpv/mpv-0/profile", params={"profile_name": "test-profile"}
         )
-        assert response.status_code == 200
+        # Should return 502 Bad Gateway when mpv command fails
+        assert response.status_code == 502
         assert response.json()["command_result"]["success"] is False
         
         # Verify tracking was NOT called
