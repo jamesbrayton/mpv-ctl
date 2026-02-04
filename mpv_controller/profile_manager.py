@@ -98,24 +98,33 @@ class ProfileManager:
                 profiles[current_profile] = {}
                 continue
 
-            # Parse option=value
-            if current_profile is not None and "=" in line:
-                key, _, value = line.partition("=")
-                key = key.strip()
-                value = value.strip()
+            # Parse option (with or without value)
+            if current_profile is not None:
+                if "=" in line:
+                    # Option with value: key=value or key= (empty value)
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    value = value.strip()
 
-                # Try to convert value to appropriate type
-                if value.lower() == "yes" or value.lower() == "true":
-                    profiles[current_profile][key] = True
-                elif value.lower() == "no" or value.lower() == "false":
-                    profiles[current_profile][key] = False
-                elif value.isdigit():
-                    profiles[current_profile][key] = int(value)
+                    # Try to convert value to appropriate type
+                    if not value:
+                        # Empty value (e.g., vf=) - store as empty string
+                        profiles[current_profile][key] = ""
+                    elif value.lower() == "yes" or value.lower() == "true":
+                        profiles[current_profile][key] = True
+                    elif value.lower() == "no" or value.lower() == "false":
+                        profiles[current_profile][key] = False
+                    elif value.isdigit():
+                        profiles[current_profile][key] = int(value)
+                    else:
+                        try:
+                            profiles[current_profile][key] = float(value)
+                        except ValueError:
+                            profiles[current_profile][key] = value
                 else:
-                    try:
-                        profiles[current_profile][key] = float(value)
-                    except ValueError:
-                        profiles[current_profile][key] = value
+                    # Option without value (e.g., glsl-shaders-clr) - store as True
+                    # These are typically flags or commands in mpv
+                    profiles[current_profile][line] = True
         
         # Validate all profiles have required metadata
         for profile_name, options in profiles.items():

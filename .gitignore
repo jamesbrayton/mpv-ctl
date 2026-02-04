@@ -46,6 +46,8 @@ htmlcov/
 # Environment
 .env
 .env.local
+# for local scratch files
+local/
 
 .DS_Store
 

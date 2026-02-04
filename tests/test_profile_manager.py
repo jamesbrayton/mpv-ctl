@@ -402,3 +402,138 @@ hwdec=auto
         profile_types = {p.name: p.profile_type for p in profiles}
         assert profile_types["vf-profile"] == "vf"
         assert profile_types["ao-profile"] == "ao"
+
+
+class TestProfileParsingEdgeCases:
+    """Tests for profile parsing edge cases."""
+
+    def test_parse_option_without_value(self, profile_manager, temp_profiles_dir):
+        """Test parsing options without values (flags/commands like glsl-shaders-clr)."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[no-shaders]
+x-profile-type=shader
+x-profile-mode=reset
+glsl-shaders-clr
+"""
+        profiles_path.write_text(content)
+
+        profiles = profile_manager.list_profiles()
+        assert len(profiles) == 1
+        
+        profile = profile_manager.get_profile("no-shaders")
+        assert profile.name == "no-shaders"
+        assert profile.profile_type == "shader"
+        assert profile.profile_mode == ProfileMode.RESET
+        # Option without value should be stored as True
+        assert profile.options["glsl-shaders-clr"] is True
+
+    def test_parse_option_with_empty_value(self, profile_manager, temp_profiles_dir):
+        """Test parsing options with empty values (e.g., vf=)."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[vf-off]
+x-profile-type=vf
+x-profile-mode=reset
+vf=
+"""
+        profiles_path.write_text(content)
+
+        profiles = profile_manager.list_profiles()
+        assert len(profiles) == 1
+        
+        profile = profile_manager.get_profile("vf-off")
+        assert profile.name == "vf-off"
+        assert profile.profile_type == "vf"
+        assert profile.profile_mode == ProfileMode.RESET
+        # Empty value should be stored as empty string
+        assert profile.options["vf"] == ""
+
+    def test_parse_mixed_option_formats(self, profile_manager, temp_profiles_dir):
+        """Test parsing profiles with mixed option formats."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[mixed-format]
+x-profile-type=shader
+x-profile-mode=reset
+profile-desc="Test profile with mixed formats"
+glsl-shaders-clr
+glsl-shaders-append=~/shaders/test.glsl
+scale=ewa_lanczos
+sharpen=0.5
+vf=
+"""
+        profiles_path.write_text(content)
+
+        profile = profile_manager.get_profile("mixed-format")
+        assert profile.name == "mixed-format"
+        assert profile.profile_type == "shader"
+        assert profile.profile_mode == ProfileMode.RESET
+        # Quotes are preserved in the value as mpv expects them
+        assert profile.options["profile-desc"] == '"Test profile with mixed formats"'
+        # Option without value
+        assert profile.options["glsl-shaders-clr"] is True
+        # Normal options
+        assert profile.options["glsl-shaders-append"] == ["~/shaders/test.glsl"]
+        assert profile.options["scale"] == "ewa_lanczos"
+        assert profile.options["sharpen"] == 0.5
+        # Empty value
+        assert profile.options["vf"] == ""
+
+    def test_parse_vf_interpolation_profile(self, profile_manager, temp_profiles_dir):
+        """Test parsing vf interpolation profile from user's profiles.conf."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[vf-interp-120]
+x-profile-type=vf
+x-profile-mode=reset
+profile-desc="minterpolate 120fps (CPU-heavy)"
+vf=lavfi=minterpolate=fps=120
+"""
+        profiles_path.write_text(content)
+
+        profile = profile_manager.get_profile("vf-interp-120")
+        assert profile.name == "vf-interp-120"
+        assert profile.profile_type == "vf"
+        assert profile.profile_mode == ProfileMode.RESET
+        # Quotes are preserved in the value as mpv expects them
+        assert profile.options["profile-desc"] == '"minterpolate 120fps (CPU-heavy)"'
+        assert profile.options["vf"] == "lavfi=minterpolate=fps=120"
+
+    def test_parse_additive_shader_profile(self, profile_manager, temp_profiles_dir):
+        """Test parsing additive shader profile (e.g., fun effects)."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[bloom]
+x-profile-type=shader
+x-profile-mode=additive
+profile-desc="Spiral bloom highlight glow"
+glsl-shaders-append=~~/shaders/fun/bloom-spiral.glsl
+"""
+        profiles_path.write_text(content)
+
+        profile = profile_manager.get_profile("bloom")
+        assert profile.name == "bloom"
+        assert profile.profile_type == "shader"
+        assert profile.profile_mode == ProfileMode.ADDITIVE
+        assert profile.options["glsl-shaders-append"] == ["~~/shaders/fun/bloom-spiral.glsl"]
+
+    def test_real_world_no_shaders_profile(self, profile_manager, temp_profiles_dir):
+        """Test the exact no-shaders profile from user's profiles.conf."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[no-shaders]
+x-profile-type=shader
+x-profile-mode=reset
+profile-desc="Disable all shaders"
+glsl-shaders-clr
+"""
+        profiles_path.write_text(content)
+
+        profile = profile_manager.get_profile("no-shaders")
+        assert profile.name == "no-shaders"
+        assert profile.profile_type == "shader"
+        assert profile.profile_mode == ProfileMode.RESET
+        # Quotes are preserved in the value as mpv expects them
+        assert profile.options["profile-desc"] == '"Disable all shaders"'
+        assert profile.options["glsl-shaders-clr"] is True
