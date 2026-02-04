@@ -1095,7 +1095,23 @@ def create_rest_app(
         """Apply a profile to an mpv instance."""
         logger.info("Apply profile", instance_id=instance_id, profile=profile_name)
 
-        # Send command to mpv FIRST (core functionality)
+        # Pre-validate profile exists (fail fast for user errors)
+        # but don't extract metadata yet to avoid blocking
+        try:
+            profile_manager.get_profile(profile_name)
+        except ProfileNotFoundError:
+            # Re-raise to let exception handler return 404
+            raise
+        except Exception as e:
+            # Log but continue - validation failed but profile might still work
+            logger.warning(
+                "Profile validation failed, attempting anyway",
+                instance_id=instance_id,
+                profile=profile_name,
+                error=str(e),
+            )
+
+        # Send command to mpv
         result = socket_manager.send_command(
             instance_id,
             ["apply-profile", profile_name],

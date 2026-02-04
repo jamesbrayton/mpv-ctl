@@ -89,9 +89,13 @@ uv venv .venv
 echo "Installing mpv-controller from ${REPO_URL} (${VERSION})..."
 source .venv/bin/activate
 uv pip install "git+${REPO_URL}@${VERSION}"
+
+# Get the installed version
+INSTALLED_VERSION=$(python -c "import mpv_controller; print(mpv_controller.__version__)" 2>/dev/null || echo "unknown")
+
 deactivate
 
-echo -e "${GREEN}✓${NC} Package installed"
+echo -e "${GREEN}✓${NC} Package installed (version: ${INSTALLED_VERSION})"
 
 # Create config directory
 echo
@@ -155,7 +159,8 @@ else
     echo -e "${GREEN}Installation Complete!${NC}"
 fi
 echo
-echo "Installed version: ${VERSION}"
+echo "Git branch/tag: ${VERSION}"
+echo "Package version: ${INSTALLED_VERSION}"
 echo
 
 if [ "$UPGRADE" = true ]; then
