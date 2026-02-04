@@ -220,7 +220,7 @@ class TestPlaybackControl:
         """Test loop endpoint toggling from 'inf' to 'no'."""
         # Mock get_property to return current value
         socket_manager.get_property = Mock(
-            return_value={"error": "success", "data": "inf"}
+            return_value="inf"
         )
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
@@ -251,7 +251,7 @@ class TestPlaybackControl:
         """Test loop endpoint toggling from 'no' to 'inf'."""
         # Mock get_property to return current value
         socket_manager.get_property = Mock(
-            return_value={"error": "success", "data": "no"}
+            return_value="no"
         )
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
@@ -280,7 +280,7 @@ class TestPlaybackControl:
         """Test loop endpoint toggling from a number to 'no'."""
         # Mock get_property to return a numeric value
         socket_manager.get_property = Mock(
-            return_value={"error": "success", "data": "3"}
+            return_value="3"
         )
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
@@ -309,7 +309,7 @@ class TestPlaybackControl:
         """Test loop endpoint toggling from False (boolean) to 'inf'."""
         # Mock get_property to return False (mpv sometimes returns bool instead of string)
         socket_manager.get_property = Mock(
-            return_value={"error": "success", "data": False}
+            return_value=False
         )
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
@@ -754,7 +754,7 @@ class TestProfileEndpoints:
         """Test creating a profile."""
         response = client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "gpu", "hwdec": "auto"}}
+            json={"name": "test-profile", "options": {"vo": "gpu", "hwdec": "auto", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
         assert response.status_code == 201
         data = response.json()
@@ -766,7 +766,7 @@ class TestProfileEndpoints:
         # Create profile first
         client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "gpu"}}
+            json={"name": "test-profile", "options": {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
 
         response = client.get("/profiles/test-profile")
@@ -786,12 +786,12 @@ class TestProfileEndpoints:
         # Create profile first
         client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "gpu"}}
+            json={"name": "test-profile", "options": {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
 
         response = client.put(
             "/profiles/test-profile",
-            json={"options": {"vo": "sdl", "hwdec": "no"}}
+            json={"options": {"vo": "sdl", "hwdec": "no", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
         assert response.status_code == 200
         data = response.json()
@@ -803,7 +803,7 @@ class TestProfileEndpoints:
         # Create profile first
         client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "gpu"}}
+            json={"name": "test-profile", "options": {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
 
         response = client.delete("/profiles/test-profile")
@@ -820,13 +820,13 @@ class TestProfileEndpoints:
         # Create profile first
         client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "gpu"}}
+            json={"name": "test-profile", "options": {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
 
         # Try to create same profile again
         response = client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "sdl"}}
+            json={"name": "test-profile", "options": {"vo": "sdl", "x-profile-type": "setting", "x-profile-mode": "reset"}}
         )
         assert response.status_code == 409
         data = response.json()
@@ -854,6 +854,7 @@ class TestApplyProfileEndpoint:
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
         )
+        socket_manager.track_applied_profile = Mock()
         socket_manager.get_standard_state = Mock(
             return_value=MpvState(
                 pause=False,
@@ -895,6 +896,7 @@ class TestApplyProfileEndpoint:
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
         )
+        socket_manager.track_applied_profile = Mock()
         socket_manager.get_standard_state = Mock(
             return_value=MpvState(
                 pause=False,
@@ -932,6 +934,7 @@ class TestApplyProfileEndpoint:
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
         )
+        socket_manager.track_applied_profile = Mock()
         socket_manager.get_standard_state = Mock(
             return_value=MpvState(
                 pause=False,
@@ -967,6 +970,7 @@ class TestApplyProfileEndpoint:
         socket_manager.send_command = Mock(
             return_value={"error": "profile not found", "data": None}
         )
+        socket_manager.track_applied_profile = Mock()
         socket_manager.get_standard_state = Mock(
             return_value=MpvState(pause=False)
         )

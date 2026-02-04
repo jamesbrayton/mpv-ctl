@@ -332,7 +332,7 @@ class MpvControllerService(MpvControllerServicer):
             # mpv can return: "inf", "no", False, True, or a number
             # If current value is 'inf', True, or any number > 0, set to 'no'
             # Otherwise, set to 'inf'
-            data = current_value.get("data")
+            data = current_value
             new_value = "no" if (data == "inf" or data is True or (isinstance(data, (int, str)) and str(data).isdigit() and int(data) > 0)) else "inf"
 
             result = self.socket_manager.send_command(

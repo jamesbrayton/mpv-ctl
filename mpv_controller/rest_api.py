@@ -70,7 +70,7 @@ def create_rest_app(
     app = FastAPI(
         title="mpv Controller API",
         description="REST API for controlling multiple mpv instances via Unix sockets",
-        version="0.2.1",
+        version="0.2.2",
         docs_url="/docs" if config.server.enable_swagger_ui else None,
         redoc_url="/redoc" if config.server.enable_swagger_ui else None,
     )
