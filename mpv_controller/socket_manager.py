@@ -22,7 +22,6 @@ from .models import (
     InstanceNotFoundError,
     MpvState,
     ProfileMode,
-    ProfileType,
     SocketConnectionError,
     SocketTimeoutError,
 )
@@ -62,7 +61,7 @@ class MpvSocketManager:
         }
         
         # Profile tracking per instance
-        self._applied_profiles: dict[str, list[tuple[str, ProfileType]]] = {}
+        self._applied_profiles: dict[str, list[tuple[str, str]]] = {}
         
         # Availability cache
         # Note: Using cached availability checks for performance.
@@ -332,7 +331,7 @@ class MpvSocketManager:
         self,
         instance_id: str,
         profile_name: str,
-        profile_type: ProfileType,
+        profile_type: str,
         profile_mode: ProfileMode,
     ) -> None:
         """Track applied profile with type-specific reset logic.
@@ -340,7 +339,7 @@ class MpvSocketManager:
         Args:
             instance_id: ID of the mpv instance.
             profile_name: Name of the applied profile.
-            profile_type: Type of profile (shader or setting).
+            profile_type: Type of profile (e.g., 'shader', 'setting', 'vf', 'ao').
             profile_mode: Application mode (reset or additive).
         """
         if instance_id not in self._applied_profiles:
@@ -361,7 +360,7 @@ class MpvSocketManager:
             "Tracked applied profile",
             instance_id=instance_id,
             profile=profile_name,
-            type=profile_type.value,
+            type=profile_type,
             mode=profile_mode.value,
             current_profiles=[name for name, _ in self._applied_profiles[instance_id]],
         )

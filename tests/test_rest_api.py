@@ -14,7 +14,6 @@ from mpv_controller.models import (
     PlaylistEntry,
     ProfileInfo,
     ProfileMode,
-    ProfileType,
     SocketConnectionError,
     SocketTimeoutError,
 )
@@ -912,7 +911,7 @@ class TestApplyProfileEndpoint:
         call_args = socket_manager.track_applied_profile.call_args
         assert call_args[0][0] == "mpv-0"  # instance_id
         assert call_args[0][1] == "anime4k"  # profile_name
-        assert call_args[0][2] == ProfileType.SHADER  # profile_type
+        assert call_args[0][2] == "shader"  # profile_type
         assert call_args[0][3] == ProfileMode.RESET  # profile_mode
 
     def test_apply_profile_tracks_additive(self, client, socket_manager, profile_manager):

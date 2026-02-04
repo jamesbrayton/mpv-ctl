@@ -12,7 +12,6 @@ from mpv_controller.models import (
     CommandExecutionError,
     InstanceNotFoundError,
     ProfileMode,
-    ProfileType,
     SocketConnectionError,
     SocketTimeoutError,
 )
@@ -195,7 +194,7 @@ class TestProfileTracking:
         socket_manager.track_applied_profile(
             "mpv-0",
             "anime4k",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         
@@ -207,13 +206,13 @@ class TestProfileTracking:
         socket_manager.track_applied_profile(
             "mpv-0",
             "anime4k",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         socket_manager.track_applied_profile(
             "mpv-0",
             "sharpen",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.ADDITIVE,
         )
         
@@ -226,21 +225,21 @@ class TestProfileTracking:
         socket_manager.track_applied_profile(
             "mpv-0",
             "anime4k",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         # Apply setting profile
         socket_manager.track_applied_profile(
             "mpv-0",
             "debanding",
-            ProfileType.SETTING,
+            "setting",
             ProfileMode.ADDITIVE,
         )
         # Apply new shader profile with reset
         socket_manager.track_applied_profile(
             "mpv-0",
             "none",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         
@@ -253,13 +252,13 @@ class TestProfileTracking:
         socket_manager.track_applied_profile(
             "mpv-0",
             "anime4k",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         socket_manager.track_applied_profile(
             "mpv-1",
             "debanding",
-            ProfileType.SETTING,
+            "setting",
             ProfileMode.RESET,
         )
         
@@ -298,13 +297,13 @@ class TestProfileTracking:
             socket_manager.track_applied_profile(
                 "mpv-0",
                 "anime4k",
-                ProfileType.SHADER,
+                "shader",
                 ProfileMode.RESET,
             )
             socket_manager.track_applied_profile(
                 "mpv-0",
                 "debanding",
-                ProfileType.SETTING,
+                "setting",
                 ProfileMode.ADDITIVE,
             )
             
@@ -318,28 +317,28 @@ class TestProfileTracking:
         socket_manager.track_applied_profile(
             "mpv-0",
             "anime4k-medium",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         # Add setting profile (additive)
         socket_manager.track_applied_profile(
             "mpv-0",
             "debanding",
-            ProfileType.SETTING,
+            "setting",
             ProfileMode.ADDITIVE,
         )
         # Add another shader (additive)
         socket_manager.track_applied_profile(
             "mpv-0",
             "sharpen",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.ADDITIVE,
         )
         # Add another setting (additive)
         socket_manager.track_applied_profile(
             "mpv-0",
             "tone-mapping",
-            ProfileType.SETTING,
+            "setting",
             ProfileMode.ADDITIVE,
         )
         
@@ -350,7 +349,7 @@ class TestProfileTracking:
         socket_manager.track_applied_profile(
             "mpv-0",
             "none",
-            ProfileType.SHADER,
+            "shader",
             ProfileMode.RESET,
         )
         

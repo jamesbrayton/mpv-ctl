@@ -8,7 +8,7 @@ from typing import Any, Optional
 import structlog
 
 from .config import Config
-from .models import ProfileInfo, ProfileMode, ProfileType
+from .models import ProfileInfo, ProfileMode
 
 logger = structlog.get_logger()
 
@@ -119,20 +119,13 @@ class ProfileManager:
         
         # Validate all profiles have required metadata
         for profile_name, options in profiles.items():
-            # Check for x-profile-type
+            # Check for x-profile-type (any string value allowed)
             if "x-profile-type" not in options:
                 raise ProfileConfigError(
                     f"Profile '{profile_name}' missing required field 'x-profile-type'"
                 )
             
-            profile_type = options["x-profile-type"]
-            if profile_type not in ["shader", "setting"]:
-                raise ProfileConfigError(
-                    f"Profile '{profile_name}' has invalid x-profile-type value '{profile_type}'. "
-                    "Must be 'shader' or 'setting'"
-                )
-            
-            # Check for x-profile-mode
+            # Check for x-profile-mode (must be 'reset' or 'additive')
             if "x-profile-mode" not in options:
                 raise ProfileConfigError(
                     f"Profile '{profile_name}' missing required field 'x-profile-mode'"
@@ -192,8 +185,8 @@ class ProfileManager:
 
         result = []
         for name, options in profiles.items():
-            # Extract and convert metadata
-            profile_type = ProfileType(options["x-profile-type"])
+            # Extract metadata
+            profile_type = options["x-profile-type"]
             profile_mode = ProfileMode(options["x-profile-mode"])
             
             # Create a copy of options without the metadata fields (mpv should ignore them, but clean response)
@@ -242,8 +235,8 @@ class ProfileManager:
         
         options = profiles[name]
         
-        # Extract and convert metadata
-        profile_type = ProfileType(options["x-profile-type"])
+        # Extract metadata
+        profile_type = options["x-profile-type"]
         profile_mode = ProfileMode(options["x-profile-mode"])
         
         # Create a copy of options
@@ -288,13 +281,8 @@ class ProfileManager:
                 f"Profile '{name}' missing required field 'x-profile-mode'"
             )
         
-        # Validate metadata values
+        # Validate metadata values (only mode, type can be any string)
         profile_type_str = options["x-profile-type"]
-        if profile_type_str not in ["shader", "setting"]:
-            raise ProfileConfigError(
-                f"Profile '{name}' has invalid x-profile-type value '{profile_type_str}'. "
-                "Must be 'shader' or 'setting'"
-            )
         
         profile_mode_str = options["x-profile-mode"]
         if profile_mode_str not in ["reset", "additive"]:
@@ -324,7 +312,7 @@ class ProfileManager:
         return ProfileInfo(
             name=name,
             options=options,
-            profile_type=ProfileType(profile_type_str),
+            profile_type=profile_type_str,
             profile_mode=ProfileMode(profile_mode_str),
         )
 
@@ -354,13 +342,8 @@ class ProfileManager:
                 f"Profile '{name}' missing required field 'x-profile-mode'"
             )
         
-        # Validate metadata values
+        # Validate metadata values (only mode, type can be any string)
         profile_type_str = options["x-profile-type"]
-        if profile_type_str not in ["shader", "setting"]:
-            raise ProfileConfigError(
-                f"Profile '{name}' has invalid x-profile-type value '{profile_type_str}'. "
-                "Must be 'shader' or 'setting'"
-            )
         
         profile_mode_str = options["x-profile-mode"]
         if profile_mode_str not in ["reset", "additive"]:
@@ -387,7 +370,7 @@ class ProfileManager:
         return ProfileInfo(
             name=name,
             options=options,
-            profile_type=ProfileType(profile_type_str),
+            profile_type=profile_type_str,
             profile_mode=ProfileMode(profile_mode_str),
         )
 

@@ -343,9 +343,10 @@ Profiles must include metadata fields that control tracking behavior:
 
 All profiles require two metadata fields (mpv ignores these `x-` prefixed fields):
 
-- **x-profile-type**: Type of configuration (`shader` or `setting`)
-  - `shader`: Manages GLSL shaders (glsl-shaders-append, glsl-shaders-clr)
-  - `setting`: Manages other settings (vo, hwdec, vf, af, etc.)
+- **x-profile-type**: Type of configuration (e.g., `shader`, `setting`, `vf`, `ao`)
+  - Use any string value to categorize your profiles
+  - Common types: `shader` (GLSL shaders), `setting` (general settings), `vf` (video filters), `ao` (audio output)
+  - Reset behavior matches profiles by type - resetting a `vf` profile clears all other `vf` profiles
 
 - **x-profile-mode**: Application mode (`reset` or `additive`)
   - `reset`: Clears all previously applied profiles of the same type
@@ -369,6 +370,13 @@ x-profile-type=setting
 x-profile-mode=additive
 profile-desc=Enable debanding filter
 vf=gradfun=radius=16
+
+# Custom type for video filters
+[deinterlace]
+x-profile-type=vf
+x-profile-mode=reset
+profile-desc=Deinterlacing filter
+vf=yadif
 
 # Clear all shaders
 [none]

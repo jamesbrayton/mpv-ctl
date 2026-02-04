@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from mpv_controller.config import Config, MpvInstance, PathSettings, SocketSettings
-from mpv_controller.models import ProfileMode, ProfileType
+from mpv_controller.models import ProfileMode
 from mpv_controller.profile_manager import (
     ProfileConfigError,
     ProfileExistsError,
@@ -128,7 +128,7 @@ class TestProfileManagerOperations:
 
         assert profile.name == "test-profile"
         assert profile.options == options
-        assert profile.profile_type == ProfileType.SETTING
+        assert profile.profile_type == "setting"
         assert profile.profile_mode == ProfileMode.ADDITIVE
 
     def test_create_profile_already_exists(self, profile_manager):
@@ -174,7 +174,7 @@ class TestProfileManagerOperations:
         profile = profile_manager.get_profile("test-profile")
         assert profile.name == "test-profile"
         assert profile.options == options
-        assert profile.profile_type == ProfileType.SETTING
+        assert profile.profile_type == "setting"
         assert profile.profile_mode == ProfileMode.ADDITIVE
 
     def test_get_profile_not_found(self, profile_manager):
@@ -200,7 +200,7 @@ class TestProfileManagerOperations:
 
         assert profile.name == "test-profile"
         assert profile.options == new_options
-        assert profile.profile_type == ProfileType.SETTING
+        assert profile.profile_type == "setting"
         assert profile.profile_mode == ProfileMode.ADDITIVE
 
     def test_update_profile_not_found(self, profile_manager):
@@ -301,16 +301,16 @@ class TestProfileMetadataValidation:
             profile_manager.create_profile("test-profile", options)
         assert "x-profile-mode" in str(exc_info.value)
 
-    def test_create_profile_invalid_type(self, profile_manager):
-        """Test that creating a profile with invalid x-profile-type raises error."""
+    def test_create_profile_custom_type(self, profile_manager):
+        """Test that creating a profile with custom x-profile-type works (e.g., 'vf', 'ao')."""
         options = {
             "vo": "gpu",
-            "x-profile-type": "invalid-type",
+            "x-profile-type": "vf",  # Custom type
             "x-profile-mode": "reset",
         }
-        with pytest.raises(ProfileConfigError) as exc_info:
-            profile_manager.create_profile("test-profile", options)
-        assert "invalid x-profile-type" in str(exc_info.value)
+        profile = profile_manager.create_profile("test-profile", options)
+        assert profile.profile_type == "vf"
+        assert profile.profile_mode == ProfileMode.RESET
 
     def test_create_profile_invalid_mode(self, profile_manager):
         """Test that creating a profile with invalid x-profile-mode raises error."""
@@ -358,7 +358,7 @@ hwdec=auto
             "x-profile-mode": "reset",
         }
         profile = profile_manager.create_profile("shader-profile", options)
-        assert profile.profile_type == ProfileType.SHADER
+        assert profile.profile_type == "shader"
         assert profile.profile_mode == ProfileMode.RESET
 
     def test_normalize_shader_array(self, profile_manager):
@@ -374,3 +374,31 @@ hwdec=auto
         retrieved = profile_manager.get_profile("shader-profile")
         assert isinstance(retrieved.options["glsl-shaders-append"], list)
         assert retrieved.options["glsl-shaders-append"] == ["~/shaders/test.glsl"]
+
+    def test_custom_profile_types(self, profile_manager):
+        """Test that custom profile types (vf, ao, etc.) work without code changes."""
+        # Create profile with custom type "vf"
+        vf_options = {
+            "vf": "gradfun=radius=16",
+            "x-profile-type": "vf",
+            "x-profile-mode": "reset",
+        }
+        vf_profile = profile_manager.create_profile("vf-profile", vf_options)
+        assert vf_profile.profile_type == "vf"
+        assert vf_profile.profile_mode == ProfileMode.RESET
+
+        # Create profile with custom type "ao"
+        ao_options = {
+            "ao": "pulse",
+            "x-profile-type": "ao",
+            "x-profile-mode": "additive",
+        }
+        ao_profile = profile_manager.create_profile("ao-profile", ao_options)
+        assert ao_profile.profile_type == "ao"
+        assert ao_profile.profile_mode == ProfileMode.ADDITIVE
+
+        # List profiles and verify both exist
+        profiles = profile_manager.list_profiles()
+        profile_types = {p.name: p.profile_type for p in profiles}
+        assert profile_types["vf-profile"] == "vf"
+        assert profile_types["ao-profile"] == "ao"

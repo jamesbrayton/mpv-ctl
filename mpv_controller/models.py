@@ -6,13 +6,6 @@ from typing import Any, Optional, Union
 from pydantic import BaseModel, Field
 
 
-class ProfileType(str, Enum):
-    """Type of profile indicating what it manages."""
-
-    SHADER = "shader"
-    SETTING = "setting"
-
-
 class ProfileMode(str, Enum):
     """Mode of profile application."""
 
@@ -386,9 +379,9 @@ class ProfileInfo(BaseModel):
         description="Profile options/settings",
         examples=[{"vo": "gpu", "hwdec": "auto"}],
     )
-    profile_type: ProfileType = Field(
+    profile_type: str = Field(
         ...,
-        description="Type of profile (shader or setting)",
+        description="Type of profile (e.g., 'shader', 'setting', 'vf', 'ao')",
     )
     profile_mode: ProfileMode = Field(
         ...,
