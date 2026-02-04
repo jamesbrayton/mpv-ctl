@@ -13,13 +13,14 @@ mpv-controller is a Python service for controlling multiple mpv media player ins
 **ALL changes to REST API endpoints MUST be mirrored in gRPC implementation.** The APIs provide equivalent functionality—if you add a feature to one, implement it in both.
 
 Files to update in parallel:
+
 - `rest_api.py` - FastAPI endpoints
 - `grpc_service.py` - gRPC service implementation
 - `mpv_control.proto` - Protocol buffer definitions (if messages change)
 
 ### Data Flow
 
-```
+```diagram
 Client → REST/gRPC API → SocketManager (retry logic + caching) → Unix sockets → mpv instances
 ```
 
@@ -28,6 +29,7 @@ Client → REST/gRPC API → SocketManager (retry logic + caching) → Unix sock
 `SocketManager` runs a background thread that periodically checks socket availability. This reduces overhead on Kubernetes readiness probe calls (`/ready` endpoint).
 
 **Implementation details:**
+
 - Background thread updates `_instance_availability` dict every N seconds (configurable)
 - Health checks query cached state instead of probing sockets directly
 - See `socket_manager.py._availability_checker()` for the polling logic
@@ -55,6 +57,7 @@ raise InstanceNotFoundError(
 ```
 
 REST API error response format:
+
 ```json
 {
   "error": {
@@ -70,10 +73,12 @@ REST API error response format:
 ### Retry Strategy
 
 **Critical distinction:**
+
 - **Read operations** (GET/query): Exponential backoff with jitter using `tenacity`
 - **Write operations** (POST/PUT): Single-attempt only to prevent duplicate commands
 
 See `socket_manager.py` decorators:
+
 - `@retry_on_socket_error` for read operations
 - No retry decorator on write operations
 
@@ -119,6 +124,7 @@ Commit both `.proto` and generated `_pb2.py`/`_pb2_grpc.py` files.
 Every feature/fix requires ALL of these:
 
 ### 1. Unit Tests
+
 - Create/update tests for all new/changed functionality
 - Maintain minimum 80% test coverage across codebase
 - Use `unittest.mock` for socket mocking
@@ -127,32 +133,39 @@ Every feature/fix requires ALL of these:
 - See `tests/test_socket_manager.py` for socket mocking patterns
 
 ### 2. API Consistency
+
 - Changes to REST endpoints MUST be reflected in gRPC
 - Both APIs should provide equivalent functionality
 - Update `rest_api.py` and `grpc_service.py` in parallel
 
 ### 3. Protocol Buffer Updates
+
 - Update `mpv_control.proto` when adding/changing gRPC messages
 - Regenerate Python files using commands above
 - Commit both `.proto` and generated files
 
 ### 4. Version Management
+
 Increment version following semantic versioning:
+
 - **Patch** (0.2.X): Bug fixes, no API changes
 - **Minor** (0.X.0): New features, backward-compatible API changes
 - **Major** (X.0.0): Breaking changes
 
 Update version in ALL 3 locations:
+
 - `pyproject.toml`
 - `mpv_controller/__init__.py`
 - `rest_api.py` (OpenAPI version)
 
 ### 5. Documentation
+
 - Update `README.md` if user-facing behavior changes (keep succinct)
 - Create/update detailed docs in `/docs` for complex topics
 - Follow documentation style guide (see below)
 
 ### 6. Feature Planning & Implementation Documentation
+
 - Create feature subfolder: `/docs/features/<feature-name>/`
 - Store ALL feature-related planning/implementation docs in this subfolder:
   - Planning documents (e.g., `PLAN.md`, `DESIGN.md`)
@@ -162,7 +175,8 @@ Update version in ALL 3 locations:
 - Preserve feature folders for historical record (do NOT delete after completion)
 
 Example structure:
-```
+
+```tree
 /docs/features/profile-tracking/
   PROFILE_TRACKING_PLAN.md
   IMPLEMENTATION.md
@@ -170,6 +184,7 @@ Example structure:
 ```
 
 ### 7. Architectural Decision Records (ADRs)
+
 - Create ADR in `/docs/ADRs/` for any design/architecture decisions
 - Number sequentially (001, 002, etc.)
 - Keep ADRs concise and focused (see existing ADRs 001-006 as templates)
@@ -178,17 +193,20 @@ Example structure:
 ## Documentation Style Guide
 
 ### README.md
+
 - Succinct, to-the-point content
 - Reference `/docs` folder for expanded information
 - Include quick examples and common use cases
 - Keep technical details minimal
 
 ### `/docs` Files
+
 1. **State the Focus**: Clear title and purpose statement
 2. **ELI5 Description**: Explain-like-I'm-5 overview for quick understanding
 3. **Detailed Technical Content**: In-depth information, instructions, examples
 
 ### ADRs (`/docs/ADRs`)
+
 - Short and explicit
 - Follow existing template structure:
   - **Status**: (Accepted/Proposed/Deprecated)
@@ -202,16 +220,20 @@ Example structure:
 ## Project-Specific Patterns
 
 ### Profile Tracking
+
 Profiles require metadata fields (mpv ignores `x-` prefixed fields):
+
 - `x-profile-type`: `shader` or `setting`
 - `x-profile-mode`: `reset` or `additive`
 
 See `ProfileManager._parse_profiles_config()` for validation logic. Shader arrays are automatically normalized.
 
 ### Configuration
+
 XDG-compliant paths with Pydantic validation.
 
 Priority order:
+
 1. `$MPV_CONTROLLER_CONFIG` environment variable
 2. `$XDG_CONFIG_HOME/mpv-controller/config.yaml`
 3. `~/.config/mpv-controller/config.yaml`
@@ -219,15 +241,18 @@ Priority order:
 See `config.example.yaml` for all options.
 
 ### Systemd Service Deployment
+
 The service runs as a systemd user service (not system service) on the same host as mpv instances.
 
 **Installation pattern:**
+
 - Virtual environment in `~/.local/share/mpv-controller`
 - Configuration in `~/.config/mpv-controller/config.yaml`
 - Service file in `~/.config/systemd/user/mpv-controller.service`
 - Logs to systemd journal (view with `journalctl --user -u mpv-controller`)
 
 **Upgrade handling:**
+
 - Stop service before removing virtual environment
 - Preserve configuration file across upgrades
 - Restart service after installing new version
@@ -246,6 +271,7 @@ See `install.sh` for complete installation/upgrade logic.
 ## Pre-Commit Checklist
 
 Before considering work complete:
+
 - [ ] Unit tests created/updated and passing
 - [ ] Test coverage ≥80% (check with `--cov` flag)
 - [ ] REST API changes mirrored in gRPC

@@ -54,7 +54,8 @@ Every feature implementation or bug fix MUST include:
    - Keep root directory clean—NO feature planning docs in root
    - Preserve feature folders for historical record (do NOT delete after completion)
    - Example structure:
-     ```
+
+     ```tree
      /docs/features/profile-tracking/
        PROFILE_TRACKING_PLAN.md
        IMPLEMENTATION.md
@@ -70,17 +71,20 @@ Every feature implementation or bug fix MUST include:
 ### Documentation Style Guide
 
 **README.md:**
+
 - Succinct, to-the-point content
 - Reference `/docs` folder for expanded information
 - Include quick examples and common use cases
 - Keep technical details minimal
 
 **`/docs` Files:**
+
 1. **State the Focus**: Clear title and purpose statement
 2. **ELI5 Description**: Explain-like-I'm-5 overview for quick understanding
 3. **Detailed Technical Content**: In-depth information, instructions, examples
 
 **ADRs (`/docs/ADRs`):**
+
 - Short and explicit
 - Follow existing template structure:
   - **Status**: (Accepted/Proposed/Deprecated)
@@ -94,6 +98,7 @@ Every feature implementation or bug fix MUST include:
 ### Pre-Commit Checklist
 
 Before considering work complete:
+
 - [ ] Unit tests created/updated and passing
 - [ ] Test coverage ≥80% (check with `--cov` flag)
 - [ ] REST API changes mirrored in gRPC
@@ -133,7 +138,7 @@ sed -i 's/^import mpv_control_pb2/from . import mpv_control_pb2/' \
 
 ## Architecture
 
-```
+```diagram
 ┌─────────────────┐
 │  k8s Ingress    │ (External authentication)
 └────────┬────────┘
@@ -172,6 +177,7 @@ sed -i 's/^import mpv_control_pb2/from . import mpv_control_pb2/' \
 ## Configuration
 
 Configuration file location priority:
+
 1. `$MPV_CONTROLLER_CONFIG` environment variable
 2. `$XDG_CONFIG_HOME/mpv-controller/config.yaml`
 3. `~/.config/mpv-controller/config.yaml`
@@ -181,6 +187,7 @@ See `config.example.yaml` for all options. Key sections: `mpv_instances`, `serve
 ## Error Handling
 
 All errors use standardized codes defined in `models.py`:
+
 - `INSTANCE_NOT_FOUND` (404)
 - `SOCKET_TIMEOUT` (504)
 - `SOCKET_CONNECTION_ERROR` (503)

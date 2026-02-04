@@ -42,6 +42,7 @@ We will implement a profile tracking system with required metadata fields that:
 Indicates what aspect of mpv configuration the profile affects.
 
 **Values:**
+
 - `shader`: Profile manages GLSL shaders (glsl-shaders-append, glsl-shaders-clr)
 - `setting`: Profile manages other mpv settings (vf, af, volume, etc.)
 
@@ -52,6 +53,7 @@ Indicates what aspect of mpv configuration the profile affects.
 Indicates how the profile interacts with previously applied profiles.
 
 **Values:**
+
 - `reset`: Removes all previously tracked profiles of the same `x-profile-type` before applying this profile
 - `additive`: Adds to existing tracked profiles of the same `x-profile-type`
 
@@ -71,6 +73,7 @@ def track_applied_profile(instance_id, profile_name, profile_type, profile_mode)
 ```
 
 This allows:
+
 - Shader profiles to reset other shader profiles without affecting settings
 - Setting profiles to reset other setting profiles without affecting shaders
 - Mixed stacking of different profile types
@@ -103,6 +106,7 @@ Users upgrading from 0.1.x to 0.2.0 must:
 3. Update any profile creation/update API calls to include metadata
 
 Example migration:
+
 ```ini
 # Before (0.1.x)
 [anime4k]
@@ -124,6 +128,7 @@ glsl-shaders-append=~~/shaders/Anime4K.glsl
 Simply track all profile applications without any reset logic.
 
 **Rejected because:**
+
 - Couldn't implement intelligent reset semantics
 - No way to know when to clear previous profiles
 - Would accumulate profiles indefinitely
@@ -133,6 +138,7 @@ Simply track all profile applications without any reset logic.
 Use naming patterns like `shader-*` or `setting-*` to infer type.
 
 **Rejected because:**
+
 - Fragile and error-prone
 - Restricts naming flexibility
 - Not self-documenting
@@ -143,6 +149,7 @@ Use naming patterns like `shader-*` or `setting-*` to infer type.
 Have `/profiles/shaders` and `/profiles/settings` endpoints.
 
 **Rejected because:**
+
 - More complex API surface
 - Doesn't solve the reset/additive distinction
 - Harder to list all profiles
@@ -153,6 +160,7 @@ Have `/profiles/shaders` and `/profiles/settings` endpoints.
 Try to infer applied profiles by querying mpv configuration.
 
 **Rejected because:**
+
 - mpv doesn't expose which profiles were applied
 - Multiple profiles can result in identical state
 - Lossy reconstruction of application order

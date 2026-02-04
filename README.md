@@ -19,7 +19,7 @@ A Python service for controlling multiple mpv instances via Unix sockets, exposi
 
 ## Architecture
 
-```
+```diagram
 ┌─────────────────┐
 │  k8s Ingress    │ (External authentication)
 └────────┬────────┘
@@ -63,6 +63,7 @@ curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.s
 ```
 
 This will:
+
 - Create a virtual environment in `~/.local/share/mpv-controller`
 - Install the package
 - Set up the systemd service
@@ -84,6 +85,7 @@ curl -fsSL https://raw.githubusercontent.com/jamesbrayton/mpv-ctl/main/install.s
 ```
 
 The upgrade process will:
+
 - Stop the running service (if active)
 - Remove the old virtual environment
 - Install the new version
@@ -99,7 +101,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 #### 2. Install Package
 
-**Option A: Install from Git (Recommended for production)**
+##### Option A: Install from Git (Recommended for production)
+
 ```bash
 mkdir -p ~/.local/share/mpv-controller
 cd ~/.local/share/mpv-controller
@@ -109,7 +112,8 @@ uv pip install "git+https://github.com/jamesbrayton/mpv-ctl.git"
 deactivate
 ```
 
-**Option B: Install from Local Clone (For development)**
+##### Option B: Install from Local Clone (For development)
+
 ```bash
 git clone <your-repo-url> mpv-controller
 cd mpv-controller
@@ -213,18 +217,20 @@ kubectl apply -f k8s/ingress.yaml
 
 Once running, access Swagger UI documentation at:
 
-```
+```code
 http://localhost:8000/docs
 ```
 
 #### Examples
 
 **Pause/Resume:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/pause
 ```
 
 **Seek:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/seek \
   -H "Content-Type: application/json" \
@@ -232,6 +238,7 @@ curl -X POST http://localhost:8000/mpv/mpv-0/seek \
 ```
 
 **Set Volume:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/volume \
   -H "Content-Type: application/json" \
@@ -239,21 +246,25 @@ curl -X POST http://localhost:8000/mpv/mpv-0/volume \
 ```
 
 **List All Available Properties:**
+
 ```bash
 curl http://localhost:8000/mpv/mpv-0/properties
 ```
 
 **Get Specific Property:**
+
 ```bash
 curl http://localhost:8000/mpv/mpv-0/properties/filename
 ```
 
 **Get Status:**
+
 ```bash
 curl http://localhost:8000/mpv/mpv-0/status
 ```
 
 **Raw Command:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/command \
   -H "Content-Type: application/json" \
@@ -263,6 +274,7 @@ curl -X POST http://localhost:8000/mpv/mpv-0/command \
 #### Speed Control
 
 **Set Playback Speed:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/speed \
   -H "Content-Type: application/json" \
@@ -270,11 +282,13 @@ curl -X POST http://localhost:8000/mpv/mpv-0/speed \
 ```
 
 **Increase Speed by 0.05:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/speed/up
 ```
 
 **Decrease Speed by 0.05:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/speed/down
 ```
@@ -282,11 +296,13 @@ curl -X POST http://localhost:8000/mpv/mpv-0/speed/down
 #### Frame Navigation
 
 **Advance One Frame:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/frame/forward
 ```
 
 **Go Back One Frame:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/frame/backward
 ```
@@ -294,21 +310,25 @@ curl -X POST http://localhost:8000/mpv/mpv-0/frame/backward
 #### Playlist Navigation
 
 **Play Next Video:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/playlist/next
 ```
 
 **Play Previous Video:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/playlist/previous
 ```
 
 **Restart Current Video:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/playlist/restart
 ```
 
 **Switch to Playlist (immediate):**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/playlist/switch \
   -H "Content-Type: application/json" \
@@ -359,16 +379,19 @@ glsl-shaders-clr
 ```
 
 **List All Profiles:**
+
 ```bash
 curl http://localhost:8000/profiles
 ```
 
 **Get Profile Details:**
+
 ```bash
 curl http://localhost:8000/profiles/gpu-hq
 ```
 
 **Create Profile:**
+
 ```bash
 curl -X POST http://localhost:8000/profiles \
   -H "Content-Type: application/json" \
@@ -384,6 +407,7 @@ curl -X POST http://localhost:8000/profiles \
 ```
 
 **Update Profile:**
+
 ```bash
 curl -X PUT http://localhost:8000/profiles/my-profile \
   -H "Content-Type: application/json" \
@@ -397,11 +421,13 @@ curl -X PUT http://localhost:8000/profiles/my-profile \
 ```
 
 **Delete Profile:**
+
 ```bash
 curl -X DELETE http://localhost:8000/profiles/my-profile
 ```
 
 **Apply Profile to Instance:**
+
 ```bash
 curl -X POST http://localhost:8000/mpv/mpv-0/profile?profile_name=gpu-hq
 ```
@@ -421,16 +447,19 @@ The status response includes `applied_profiles` showing which profiles are curre
 #### Playlist File Management
 
 **List All Playlists:**
+
 ```bash
 curl http://localhost:8000/playlists
 ```
 
 **Get Playlist Contents:**
+
 ```bash
 curl http://localhost:8000/playlists/favorites
 ```
 
 **Create Playlist:**
+
 ```bash
 curl -X POST http://localhost:8000/playlists \
   -H "Content-Type: application/json" \
@@ -438,6 +467,7 @@ curl -X POST http://localhost:8000/playlists \
 ```
 
 **Update Playlist (append):**
+
 ```bash
 curl -X PUT http://localhost:8000/playlists/favorites \
   -H "Content-Type: application/json" \
@@ -445,6 +475,7 @@ curl -X PUT http://localhost:8000/playlists/favorites \
 ```
 
 **Update Playlist (replace):**
+
 ```bash
 curl -X PUT http://localhost:8000/playlists/favorites \
   -H "Content-Type: application/json" \
@@ -452,6 +483,7 @@ curl -X PUT http://localhost:8000/playlists/favorites \
 ```
 
 **Delete Playlist:**
+
 ```bash
 curl -X DELETE http://localhost:8000/playlists/favorites
 ```
@@ -535,6 +567,7 @@ All errors follow a standardized format:
 ```
 
 Error codes:
+
 - `INSTANCE_NOT_FOUND` (404): Instance ID doesn't exist
 - `SOCKET_TIMEOUT` (504): Socket operation timed out
 - `SOCKET_CONNECTION_ERROR` (503): Cannot connect to socket
