@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from mpv_controller.config import Config, MpvInstance, PathSettings, SocketSettings
+from mpv_controller.models import ProfileMode, ProfileType
 from mpv_controller.profile_manager import (
     ProfileConfigError,
     ProfileExistsError,
@@ -117,24 +118,42 @@ class TestProfileManagerOperations:
 
     def test_create_profile(self, profile_manager):
         """Test creating a new profile."""
-        options = {"vo": "gpu", "hwdec": "auto"}
+        options = {
+            "vo": "gpu",
+            "hwdec": "auto",
+            "x-profile-type": "setting",
+            "x-profile-mode": "additive",
+        }
         profile = profile_manager.create_profile("test-profile", options)
 
         assert profile.name == "test-profile"
         assert profile.options == options
+        assert profile.profile_type == ProfileType.SETTING
+        assert profile.profile_mode == ProfileMode.ADDITIVE
 
     def test_create_profile_already_exists(self, profile_manager):
         """Test creating a profile that already exists."""
-        profile_manager.create_profile("test-profile", {"vo": "gpu"})
+        options = {
+            "vo": "gpu",
+            "x-profile-type": "setting",
+            "x-profile-mode": "reset",
+        }
+        profile_manager.create_profile("test-profile", options)
 
         with pytest.raises(ProfileExistsError) as exc_info:
-            profile_manager.create_profile("test-profile", {"vo": "gpu"})
+            profile_manager.create_profile("test-profile", options)
         assert exc_info.value.name == "test-profile"
 
     def test_list_profiles_after_create(self, profile_manager):
         """Test listing profiles after creating one."""
-        profile_manager.create_profile("profile-1", {"vo": "gpu"})
-        profile_manager.create_profile("profile-2", {"hwdec": "auto"})
+        profile_manager.create_profile(
+            "profile-1",
+            {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"},
+        )
+        profile_manager.create_profile(
+            "profile-2",
+            {"hwdec": "auto", "x-profile-type": "setting", "x-profile-mode": "additive"},
+        )
 
         profiles = profile_manager.list_profiles()
         assert len(profiles) == 2
@@ -144,12 +163,19 @@ class TestProfileManagerOperations:
 
     def test_get_profile(self, profile_manager):
         """Test getting a specific profile."""
-        options = {"vo": "gpu", "hwdec": "auto"}
+        options = {
+            "vo": "gpu",
+            "hwdec": "auto",
+            "x-profile-type": "setting",
+            "x-profile-mode": "additive",
+        }
         profile_manager.create_profile("test-profile", options)
 
         profile = profile_manager.get_profile("test-profile")
         assert profile.name == "test-profile"
         assert profile.options == options
+        assert profile.profile_type == ProfileType.SETTING
+        assert profile.profile_mode == ProfileMode.ADDITIVE
 
     def test_get_profile_not_found(self, profile_manager):
         """Test getting a profile that doesn't exist."""
@@ -159,22 +185,38 @@ class TestProfileManagerOperations:
 
     def test_update_profile(self, profile_manager):
         """Test updating an existing profile."""
-        profile_manager.create_profile("test-profile", {"vo": "gpu"})
+        profile_manager.create_profile(
+            "test-profile",
+            {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"},
+        )
 
-        new_options = {"vo": "sdl", "hwdec": "no"}
+        new_options = {
+            "vo": "sdl",
+            "hwdec": "no",
+            "x-profile-type": "setting",
+            "x-profile-mode": "additive",
+        }
         profile = profile_manager.update_profile("test-profile", new_options)
 
         assert profile.name == "test-profile"
         assert profile.options == new_options
+        assert profile.profile_type == ProfileType.SETTING
+        assert profile.profile_mode == ProfileMode.ADDITIVE
 
     def test_update_profile_not_found(self, profile_manager):
         """Test updating a profile that doesn't exist."""
         with pytest.raises(ProfileNotFoundError):
-            profile_manager.update_profile("nonexistent", {"vo": "gpu"})
+            profile_manager.update_profile(
+                "nonexistent",
+                {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"},
+            )
 
     def test_delete_profile(self, profile_manager):
         """Test deleting a profile."""
-        profile_manager.create_profile("test-profile", {"vo": "gpu"})
+        profile_manager.create_profile(
+            "test-profile",
+            {"vo": "gpu", "x-profile-type": "setting", "x-profile-mode": "reset"},
+        )
         profile_manager.delete_profile("test-profile")
 
         with pytest.raises(ProfileNotFoundError):
@@ -194,6 +236,8 @@ class TestProfileConfigParsing:
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [test-profile]
+x-profile-type=setting
+x-profile-mode=additive
 vo=gpu
 hwdec=auto
 volume=75
@@ -216,9 +260,13 @@ speed=1.5
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [profile-a]
+x-profile-type=shader
+x-profile-mode=reset
 vo=gpu
 
 [profile-b]
+x-profile-type=setting
+x-profile-mode=additive
 vo=sdl
 hwdec=no
 """
@@ -234,3 +282,95 @@ hwdec=no
         assert profile_b.options["vo"] == "sdl"
         # "no" is parsed as boolean False
         assert profile_b.options["hwdec"] is False
+
+
+class TestProfileMetadataValidation:
+    """Tests for profile metadata validation."""
+
+    def test_create_profile_missing_type(self, profile_manager):
+        """Test that creating a profile without x-profile-type raises error."""
+        options = {"vo": "gpu", "x-profile-mode": "reset"}
+        with pytest.raises(ProfileConfigError) as exc_info:
+            profile_manager.create_profile("test-profile", options)
+        assert "x-profile-type" in str(exc_info.value)
+
+    def test_create_profile_missing_mode(self, profile_manager):
+        """Test that creating a profile without x-profile-mode raises error."""
+        options = {"vo": "gpu", "x-profile-type": "shader"}
+        with pytest.raises(ProfileConfigError) as exc_info:
+            profile_manager.create_profile("test-profile", options)
+        assert "x-profile-mode" in str(exc_info.value)
+
+    def test_create_profile_invalid_type(self, profile_manager):
+        """Test that creating a profile with invalid x-profile-type raises error."""
+        options = {
+            "vo": "gpu",
+            "x-profile-type": "invalid-type",
+            "x-profile-mode": "reset",
+        }
+        with pytest.raises(ProfileConfigError) as exc_info:
+            profile_manager.create_profile("test-profile", options)
+        assert "invalid x-profile-type" in str(exc_info.value)
+
+    def test_create_profile_invalid_mode(self, profile_manager):
+        """Test that creating a profile with invalid x-profile-mode raises error."""
+        options = {
+            "vo": "gpu",
+            "x-profile-type": "shader",
+            "x-profile-mode": "invalid-mode",
+        }
+        with pytest.raises(ProfileConfigError) as exc_info:
+            profile_manager.create_profile("test-profile", options)
+        assert "invalid x-profile-mode" in str(exc_info.value)
+
+    def test_update_profile_missing_metadata(self, profile_manager):
+        """Test that updating a profile without metadata raises error."""
+        # Create valid profile first
+        profile_manager.create_profile(
+            "test-profile",
+            {"vo": "gpu", "x-profile-type": "shader", "x-profile-mode": "reset"},
+        )
+
+        # Try to update without metadata
+        with pytest.raises(ProfileConfigError):
+            profile_manager.update_profile("test-profile", {"vo": "sdl"})
+
+    def test_parse_profiles_missing_metadata(self, profile_manager, temp_profiles_dir):
+        """Test that parsing profiles without metadata raises error."""
+        profiles_path = temp_profiles_dir / "profiles.conf"
+        content = """
+[bad-profile]
+vo=gpu
+hwdec=auto
+"""
+        profiles_path.write_text(content)
+
+        with pytest.raises(ProfileConfigError) as exc_info:
+            profile_manager.list_profiles()
+        assert "x-profile-type" in str(exc_info.value)
+
+    def test_shader_profile_type(self, profile_manager):
+        """Test creating a shader type profile."""
+        options = {
+            "glsl-shaders-clr": True,
+            "glsl-shaders-append": "~/shaders/test.glsl",
+            "x-profile-type": "shader",
+            "x-profile-mode": "reset",
+        }
+        profile = profile_manager.create_profile("shader-profile", options)
+        assert profile.profile_type == ProfileType.SHADER
+        assert profile.profile_mode == ProfileMode.RESET
+
+    def test_normalize_shader_array(self, profile_manager):
+        """Test that shader strings are normalized to arrays."""
+        options = {
+            "glsl-shaders-append": "~/shaders/test.glsl",
+            "x-profile-type": "shader",
+            "x-profile-mode": "additive",
+        }
+        profile = profile_manager.create_profile("shader-profile", options)
+        
+        # Retrieve the profile and check normalization
+        retrieved = profile_manager.get_profile("shader-profile")
+        assert isinstance(retrieved.options["glsl-shaders-append"], list)
+        assert retrieved.options["glsl-shaders-append"] == ["~/shaders/test.glsl"]

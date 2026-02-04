@@ -8,7 +8,7 @@ from typing import Any, Optional
 import structlog
 
 from .config import Config
-from .models import ProfileInfo
+from .models import ProfileInfo, ProfileMode, ProfileType
 
 logger = structlog.get_logger()
 
@@ -77,6 +77,9 @@ class ProfileManager:
 
         Returns:
             Dictionary mapping profile names to their options.
+            
+        Raises:
+            ProfileConfigError: If profile is missing required metadata or has invalid values.
         """
         profiles: dict[str, dict[str, Any]] = {}
         current_profile: Optional[str] = None
@@ -113,6 +116,34 @@ class ProfileManager:
                         profiles[current_profile][key] = float(value)
                     except ValueError:
                         profiles[current_profile][key] = value
+        
+        # Validate all profiles have required metadata
+        for profile_name, options in profiles.items():
+            # Check for x-profile-type
+            if "x-profile-type" not in options:
+                raise ProfileConfigError(
+                    f"Profile '{profile_name}' missing required field 'x-profile-type'"
+                )
+            
+            profile_type = options["x-profile-type"]
+            if profile_type not in ["shader", "setting"]:
+                raise ProfileConfigError(
+                    f"Profile '{profile_name}' has invalid x-profile-type value '{profile_type}'. "
+                    "Must be 'shader' or 'setting'"
+                )
+            
+            # Check for x-profile-mode
+            if "x-profile-mode" not in options:
+                raise ProfileConfigError(
+                    f"Profile '{profile_name}' missing required field 'x-profile-mode'"
+                )
+            
+            profile_mode = options["x-profile-mode"]
+            if profile_mode not in ["reset", "additive"]:
+                raise ProfileConfigError(
+                    f"Profile '{profile_name}' has invalid x-profile-mode value '{profile_mode}'. "
+                    "Must be 'reset' or 'additive'"
+                )
 
         return profiles
 
@@ -159,10 +190,31 @@ class ProfileManager:
         content = profiles_path.read_text()
         profiles = self._parse_profiles_config(content)
 
-        return [
-            ProfileInfo(name=name, options=options)
-            for name, options in profiles.items()
-        ]
+        result = []
+        for name, options in profiles.items():
+            # Extract and convert metadata
+            profile_type = ProfileType(options["x-profile-type"])
+            profile_mode = ProfileMode(options["x-profile-mode"])
+            
+            # Create a copy of options without the metadata fields (mpv should ignore them, but clean response)
+            options_copy = options.copy()
+            
+            # Normalize shader values to arrays
+            if "glsl-shaders-append" in options_copy:
+                value = options_copy["glsl-shaders-append"]
+                if isinstance(value, str):
+                    options_copy["glsl-shaders-append"] = [value]
+            
+            result.append(
+                ProfileInfo(
+                    name=name,
+                    options=options_copy,
+                    profile_type=profile_type,
+                    profile_mode=profile_mode,
+                )
+            )
+
+        return result
 
     def get_profile(self, name: str) -> ProfileInfo:
         """Get a specific profile by name.
@@ -187,8 +239,28 @@ class ProfileManager:
 
         if name not in profiles:
             raise ProfileNotFoundError(name)
+        
+        options = profiles[name]
+        
+        # Extract and convert metadata
+        profile_type = ProfileType(options["x-profile-type"])
+        profile_mode = ProfileMode(options["x-profile-mode"])
+        
+        # Create a copy of options
+        options_copy = options.copy()
+        
+        # Normalize shader values to arrays
+        if "glsl-shaders-append" in options_copy:
+            value = options_copy["glsl-shaders-append"]
+            if isinstance(value, str):
+                options_copy["glsl-shaders-append"] = [value]
 
-        return ProfileInfo(name=name, options=profiles[name])
+        return ProfileInfo(
+            name=name,
+            options=options_copy,
+            profile_type=profile_type,
+            profile_mode=profile_mode,
+        )
 
     def create_profile(self, name: str, options: dict[str, Any]) -> ProfileInfo:
         """Create a new profile.
@@ -202,13 +274,39 @@ class ProfileManager:
 
         Raises:
             ProfileExistsError: If profile already exists.
-            ProfileConfigError: If profiles config path is not configured.
+            ProfileConfigError: If profiles config path is not configured or metadata is invalid.
         """
         profiles_path = self._ensure_config()
+        
+        # Validate metadata fields exist
+        if "x-profile-type" not in options:
+            raise ProfileConfigError(
+                f"Profile '{name}' missing required field 'x-profile-type'"
+            )
+        if "x-profile-mode" not in options:
+            raise ProfileConfigError(
+                f"Profile '{name}' missing required field 'x-profile-mode'"
+            )
+        
+        # Validate metadata values
+        profile_type_str = options["x-profile-type"]
+        if profile_type_str not in ["shader", "setting"]:
+            raise ProfileConfigError(
+                f"Profile '{name}' has invalid x-profile-type value '{profile_type_str}'. "
+                "Must be 'shader' or 'setting'"
+            )
+        
+        profile_mode_str = options["x-profile-mode"]
+        if profile_mode_str not in ["reset", "additive"]:
+            raise ProfileConfigError(
+                f"Profile '{name}' has invalid x-profile-mode value '{profile_mode_str}'. "
+                "Must be 'reset' or 'additive'"
+            )
 
         profiles: dict[str, dict[str, Any]] = {}
         if profiles_path.exists():
             content = profiles_path.read_text()
+            # Don't validate existing profiles on create, just parse
             profiles = self._parse_profiles_config(content)
 
         if name in profiles:
@@ -223,7 +321,12 @@ class ProfileManager:
         profiles_path.write_text(self._serialize_profiles_config(profiles))
 
         logger.info("Created profile", name=name)
-        return ProfileInfo(name=name, options=options)
+        return ProfileInfo(
+            name=name,
+            options=options,
+            profile_type=ProfileType(profile_type_str),
+            profile_mode=ProfileMode(profile_mode_str),
+        )
 
     def update_profile(self, name: str, options: dict[str, Any]) -> ProfileInfo:
         """Update an existing profile (replaces all options).
@@ -237,9 +340,34 @@ class ProfileManager:
 
         Raises:
             ProfileNotFoundError: If profile doesn't exist.
-            ProfileConfigError: If profiles config path is not configured.
+            ProfileConfigError: If profiles config path is not configured or metadata is invalid.
         """
         profiles_path = self._ensure_config()
+        
+        # Validate metadata fields exist
+        if "x-profile-type" not in options:
+            raise ProfileConfigError(
+                f"Profile '{name}' missing required field 'x-profile-type'"
+            )
+        if "x-profile-mode" not in options:
+            raise ProfileConfigError(
+                f"Profile '{name}' missing required field 'x-profile-mode'"
+            )
+        
+        # Validate metadata values
+        profile_type_str = options["x-profile-type"]
+        if profile_type_str not in ["shader", "setting"]:
+            raise ProfileConfigError(
+                f"Profile '{name}' has invalid x-profile-type value '{profile_type_str}'. "
+                "Must be 'shader' or 'setting'"
+            )
+        
+        profile_mode_str = options["x-profile-mode"]
+        if profile_mode_str not in ["reset", "additive"]:
+            raise ProfileConfigError(
+                f"Profile '{name}' has invalid x-profile-mode value '{profile_mode_str}'. "
+                "Must be 'reset' or 'additive'"
+            )
 
         if not profiles_path.exists():
             raise ProfileNotFoundError(name)
@@ -256,7 +384,12 @@ class ProfileManager:
         profiles_path.write_text(self._serialize_profiles_config(profiles))
 
         logger.info("Updated profile", name=name)
-        return ProfileInfo(name=name, options=options)
+        return ProfileInfo(
+            name=name,
+            options=options,
+            profile_type=ProfileType(profile_type_str),
+            profile_mode=ProfileMode(profile_mode_str),
+        )
 
     def delete_profile(self, name: str) -> None:
         """Delete a profile.

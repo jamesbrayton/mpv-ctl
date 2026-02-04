@@ -6,6 +6,20 @@ from typing import Any, Optional, Union
 from pydantic import BaseModel, Field
 
 
+class ProfileType(str, Enum):
+    """Type of profile indicating what it manages."""
+
+    SHADER = "shader"
+    SETTING = "setting"
+
+
+class ProfileMode(str, Enum):
+    """Mode of profile application."""
+
+    RESET = "reset"
+    ADDITIVE = "additive"
+
+
 # Error Codes
 class ErrorCode:
     """Standard error codes for the application."""
@@ -192,6 +206,11 @@ class MpvState(BaseModel):
         description="Whether playlist shuffle is enabled",
         examples=[True, False],
     )
+    applied_profiles: Optional[list[str]] = Field(
+        None,
+        description="List of currently applied profile names in application order",
+        examples=[["anime4k-medium", "debanding"]],
+    )
 
 
 class CommandResult(BaseModel):
@@ -366,6 +385,14 @@ class ProfileInfo(BaseModel):
         default_factory=dict,
         description="Profile options/settings",
         examples=[{"vo": "gpu", "hwdec": "auto"}],
+    )
+    profile_type: ProfileType = Field(
+        ...,
+        description="Type of profile (shader or setting)",
+    )
+    profile_mode: ProfileMode = Field(
+        ...,
+        description="Application mode (reset or additive)",
     )
 
 

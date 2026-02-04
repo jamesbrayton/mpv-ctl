@@ -109,6 +109,7 @@ message MpvState {
     optional string media_title = 10;
     optional string loop_file = 11;
     optional bool shuffle = 12;
+    repeated string applied_profiles = 13;
 }
 
 // Response from command execution

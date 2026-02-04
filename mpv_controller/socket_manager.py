@@ -21,6 +21,8 @@ from .models import (
     CommandExecutionError,
     InstanceNotFoundError,
     MpvState,
+    ProfileMode,
+    ProfileType,
     SocketConnectionError,
     SocketTimeoutError,
 )
@@ -58,6 +60,9 @@ class MpvSocketManager:
         self.instances: dict[str, MpvInstance] = {
             instance.id: instance for instance in config.mpv_instances
         }
+        
+        # Profile tracking per instance
+        self._applied_profiles: dict[str, list[tuple[str, ProfileType]]] = {}
         
         # Availability cache
         # Note: Using cached availability checks for performance.
@@ -318,4 +323,58 @@ class MpvSocketManager:
                 )
                 # Property may not be available, continue with others
         
+        # Add applied profiles
+        state_data["applied_profiles"] = self.get_applied_profiles(instance_id)
+        
         return MpvState(**state_data)
+
+    def track_applied_profile(
+        self,
+        instance_id: str,
+        profile_name: str,
+        profile_type: ProfileType,
+        profile_mode: ProfileMode,
+    ) -> None:
+        """Track applied profile with type-specific reset logic.
+
+        Args:
+            instance_id: ID of the mpv instance.
+            profile_name: Name of the applied profile.
+            profile_type: Type of profile (shader or setting).
+            profile_mode: Application mode (reset or additive).
+        """
+        if instance_id not in self._applied_profiles:
+            self._applied_profiles[instance_id] = []
+
+        if profile_mode == ProfileMode.RESET:
+            # Remove all profiles of the same type
+            self._applied_profiles[instance_id] = [
+                (name, ptype)
+                for name, ptype in self._applied_profiles[instance_id]
+                if ptype != profile_type
+            ]
+
+        # Add the new profile
+        self._applied_profiles[instance_id].append((profile_name, profile_type))
+
+        logger.debug(
+            "Tracked applied profile",
+            instance_id=instance_id,
+            profile=profile_name,
+            type=profile_type.value,
+            mode=profile_mode.value,
+            current_profiles=[name for name, _ in self._applied_profiles[instance_id]],
+        )
+
+    def get_applied_profiles(self, instance_id: str) -> list[str]:
+        """Get list of currently applied profile names for an instance.
+
+        Args:
+            instance_id: ID of the mpv instance.
+
+        Returns:
+            List of profile names in application order.
+        """
+        if instance_id not in self._applied_profiles:
+            return []
+        return [name for name, _ in self._applied_profiles[instance_id]]

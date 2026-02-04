@@ -11,6 +11,8 @@ from mpv_controller.config import Config, MpvInstance, ServerSettings, SocketSet
 from mpv_controller.models import (
     CommandExecutionError,
     InstanceNotFoundError,
+    ProfileMode,
+    ProfileType,
     SocketConnectionError,
     SocketTimeoutError,
 )
@@ -183,3 +185,175 @@ def test_get_standard_state(mock_socket_class, socket_manager):
     assert state.duration == 300.0
     assert state.filename == "/test/video.mp4"
     assert state.volume == 75.0
+
+
+class TestProfileTracking:
+    """Tests for profile tracking functionality."""
+
+    def test_track_applied_profile_shader_reset(self, socket_manager):
+        """Test tracking a shader profile with reset mode."""
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "anime4k",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        
+        profiles = socket_manager.get_applied_profiles("mpv-0")
+        assert profiles == ["anime4k"]
+
+    def test_track_applied_profile_additive(self, socket_manager):
+        """Test tracking profiles in additive mode."""
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "anime4k",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "sharpen",
+            ProfileType.SHADER,
+            ProfileMode.ADDITIVE,
+        )
+        
+        profiles = socket_manager.get_applied_profiles("mpv-0")
+        assert profiles == ["anime4k", "sharpen"]
+
+    def test_track_applied_profile_type_specific_reset(self, socket_manager):
+        """Test that reset mode only clears profiles of the same type."""
+        # Apply shader profile
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "anime4k",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        # Apply setting profile
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "debanding",
+            ProfileType.SETTING,
+            ProfileMode.ADDITIVE,
+        )
+        # Apply new shader profile with reset
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "none",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        
+        profiles = socket_manager.get_applied_profiles("mpv-0")
+        # Should have setting profile and new shader profile
+        assert profiles == ["debanding", "none"]
+
+    def test_track_applied_profile_multiple_instances(self, socket_manager):
+        """Test tracking profiles across multiple instances."""
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "anime4k",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        socket_manager.track_applied_profile(
+            "mpv-1",
+            "debanding",
+            ProfileType.SETTING,
+            ProfileMode.RESET,
+        )
+        
+        profiles_0 = socket_manager.get_applied_profiles("mpv-0")
+        profiles_1 = socket_manager.get_applied_profiles("mpv-1")
+        
+        assert profiles_0 == ["anime4k"]
+        assert profiles_1 == ["debanding"]
+
+    def test_get_applied_profiles_empty(self, socket_manager):
+        """Test getting applied profiles for instance with none applied."""
+        profiles = socket_manager.get_applied_profiles("mpv-0")
+        assert profiles == []
+
+    def test_get_standard_state_includes_applied_profiles(self, socket_manager):
+        """Test that get_standard_state includes applied_profiles."""
+        with patch("socket.socket") as mock_socket_class:
+            mock_sock = MagicMock()
+            mock_socket_class.return_value.__enter__.return_value = mock_sock
+            
+            # Mock responses for properties
+            responses = {
+                "pause": False,
+                "time-pos": 120.0,
+            }
+            
+            def mock_recv(size):
+                cmd = json.loads(mock_sock.sendall.call_args[0][0].decode().strip())
+                prop_name = cmd["command"][1]
+                response = {"error": "success", "data": responses.get(prop_name)}
+                return (json.dumps(response) + "\n").encode()
+            
+            mock_sock.recv.side_effect = mock_recv
+            
+            # Track some profiles
+            socket_manager.track_applied_profile(
+                "mpv-0",
+                "anime4k",
+                ProfileType.SHADER,
+                ProfileMode.RESET,
+            )
+            socket_manager.track_applied_profile(
+                "mpv-0",
+                "debanding",
+                ProfileType.SETTING,
+                ProfileMode.ADDITIVE,
+            )
+            
+            state = socket_manager.get_standard_state("mpv-0")
+            
+            assert state.applied_profiles == ["anime4k", "debanding"]
+
+    def test_complex_profile_stacking(self, socket_manager):
+        """Test complex profile stacking scenario."""
+        # Apply shader profile (reset)
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "anime4k-medium",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        # Add setting profile (additive)
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "debanding",
+            ProfileType.SETTING,
+            ProfileMode.ADDITIVE,
+        )
+        # Add another shader (additive)
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "sharpen",
+            ProfileType.SHADER,
+            ProfileMode.ADDITIVE,
+        )
+        # Add another setting (additive)
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "tone-mapping",
+            ProfileType.SETTING,
+            ProfileMode.ADDITIVE,
+        )
+        
+        profiles = socket_manager.get_applied_profiles("mpv-0")
+        assert profiles == ["anime4k-medium", "debanding", "sharpen", "tone-mapping"]
+        
+        # Now apply a shader reset
+        socket_manager.track_applied_profile(
+            "mpv-0",
+            "none",
+            ProfileType.SHADER,
+            ProfileMode.RESET,
+        )
+        
+        profiles = socket_manager.get_applied_profiles("mpv-0")
+        # Should only have setting profiles and the new shader profile
+        assert profiles == ["debanding", "tone-mapping", "none"]

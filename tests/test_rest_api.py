@@ -13,6 +13,8 @@ from mpv_controller.models import (
     MpvState,
     PlaylistEntry,
     ProfileInfo,
+    ProfileMode,
+    ProfileType,
     SocketConnectionError,
     SocketTimeoutError,
 )
@@ -835,40 +837,154 @@ class TestProfileEndpoints:
 class TestApplyProfileEndpoint:
     """Tests for applying profile to mpv instance."""
 
-    def test_apply_profile(self, client, socket_manager):
+    def test_apply_profile(self, client, socket_manager, profile_manager):
         """Test applying a profile to an mpv instance."""
         # Create profile first
         client.post(
             "/profiles",
-            json={"name": "test-profile", "options": {"vo": "gpu"}}
+            json={
+                "name": "test-profile",
+                "options": {
+                    "vo": "gpu",
+                    "x-profile-type": "setting",
+                    "x-profile-mode": "reset",
+                },
+            },
         )
 
         socket_manager.send_command = Mock(
             return_value={"error": "success", "data": None}
         )
         socket_manager.get_standard_state = Mock(
-            return_value={
-                "pause": False,
-                "time_pos": 120.5,
-                "duration": 300.0,
-                "volume": 100.0,
-                "filename": "test.mp4",
-            }
+            return_value=MpvState(
+                pause=False,
+                time_pos=120.5,
+                duration=300.0,
+                volume=100.0,
+                filename="test.mp4",
+                applied_profiles=["test-profile"],
+            )
         )
 
         response = client.post(
-            "/mpv/mpv-0/profile",
-            params={"profile_name": "test-profile"}
+            "/mpv/mpv-0/profile", params={"profile_name": "test-profile"}
         )
         assert response.status_code == 200
         data = response.json()
         assert data["command_result"]["success"] is True
+        assert data["state"]["applied_profiles"] == ["test-profile"]
+        
+        # Verify track_applied_profile was called
+        socket_manager.track_applied_profile.assert_called_once()
+
+    def test_apply_profile_tracks_shader_reset(self, client, socket_manager, profile_manager):
+        """Test that applying a shader profile with reset mode is tracked."""
+        # Create shader profile
+        client.post(
+            "/profiles",
+            json={
+                "name": "anime4k",
+                "options": {
+                    "glsl-shaders-clr": True,
+                    "glsl-shaders-append": "~/shaders/test.glsl",
+                    "x-profile-type": "shader",
+                    "x-profile-mode": "reset",
+                },
+            },
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(
+                pause=False,
+                applied_profiles=["anime4k"],
+            )
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile", params={"profile_name": "anime4k"}
+        )
+        assert response.status_code == 200
+        
+        # Verify track_applied_profile was called with correct parameters
+        call_args = socket_manager.track_applied_profile.call_args
+        assert call_args[0][0] == "mpv-0"  # instance_id
+        assert call_args[0][1] == "anime4k"  # profile_name
+        assert call_args[0][2] == ProfileType.SHADER  # profile_type
+        assert call_args[0][3] == ProfileMode.RESET  # profile_mode
+
+    def test_apply_profile_tracks_additive(self, client, socket_manager, profile_manager):
+        """Test that applying an additive profile is tracked."""
+        # Create additive profile
+        client.post(
+            "/profiles",
+            json={
+                "name": "debanding",
+                "options": {
+                    "vf": "gradfun=radius=16",
+                    "x-profile-type": "setting",
+                    "x-profile-mode": "additive",
+                },
+            },
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(
+                pause=False,
+                applied_profiles=["debanding"],
+            )
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile", params={"profile_name": "debanding"}
+        )
+        assert response.status_code == 200
+        
+        # Verify tracking was called with additive mode
+        call_args = socket_manager.track_applied_profile.call_args
+        assert call_args[0][3] == ProfileMode.ADDITIVE
+
+    def test_apply_profile_not_tracked_on_failure(self, client, socket_manager, profile_manager):
+        """Test that profile is not tracked if command fails."""
+        # Create profile
+        client.post(
+            "/profiles",
+            json={
+                "name": "test-profile",
+                "options": {
+                    "vo": "gpu",
+                    "x-profile-type": "setting",
+                    "x-profile-mode": "reset",
+                },
+            },
+        )
+
+        # Mock command failure
+        socket_manager.send_command = Mock(
+            return_value={"error": "profile not found", "data": None}
+        )
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(pause=False)
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile", params={"profile_name": "test-profile"}
+        )
+        assert response.status_code == 200
+        assert response.json()["command_result"]["success"] is False
+        
+        # Verify tracking was NOT called
+        socket_manager.track_applied_profile.assert_not_called()
 
     def test_apply_profile_not_found(self, client, socket_manager):
         """Test applying a non-existent profile."""
         response = client.post(
-            "/mpv/mpv-0/profile",
-            params={"profile_name": "nonexistent"}
+            "/mpv/mpv-0/profile", params={"profile_name": "nonexistent"}
         )
         assert response.status_code == 404
 

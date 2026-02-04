@@ -70,7 +70,7 @@ def create_rest_app(
     app = FastAPI(
         title="mpv Controller API",
         description="REST API for controlling multiple mpv instances via Unix sockets",
-        version="0.1.0",
+        version="0.2.0",
         docs_url="/docs" if config.server.enable_swagger_ui else None,
         redoc_url="/redoc" if config.server.enable_swagger_ui else None,
     )
@@ -1095,13 +1095,22 @@ def create_rest_app(
         """Apply a profile to an mpv instance."""
         logger.info("Apply profile", instance_id=instance_id, profile=profile_name)
 
-        # Verify profile exists first
-        profile_manager.get_profile(profile_name)
+        # Get profile with metadata
+        profile = profile_manager.get_profile(profile_name)
 
         result = socket_manager.send_command(
             instance_id,
             ["apply-profile", profile_name],
         )
+
+        # Track the applied profile if command was successful
+        if result.get("error") == "success":
+            socket_manager.track_applied_profile(
+                instance_id,
+                profile_name,
+                profile.profile_type,
+                profile.profile_mode,
+            )
 
         state = socket_manager.get_standard_state(instance_id)
 
