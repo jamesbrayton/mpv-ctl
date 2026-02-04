@@ -70,7 +70,7 @@ def create_rest_app(
     app = FastAPI(
         title="mpv Controller API",
         description="REST API for controlling multiple mpv instances via Unix sockets",
-        version="0.2.3",
+        version="0.2.5",
         docs_url="/docs" if config.server.enable_swagger_ui else None,
         redoc_url="/redoc" if config.server.enable_swagger_ui else None,
     )
@@ -1103,13 +1103,47 @@ def create_rest_app(
             ["apply-profile", profile_name],
         )
 
+        # Log the raw result from mpv for debugging
+        logger.info(
+            "Profile apply result from mpv",
+            instance_id=instance_id,
+            profile=profile_name,
+            mpv_result=result,
+        )
+
         # Track the applied profile if command was successful
         if result.get("error") == "success":
-            socket_manager.track_applied_profile(
-                instance_id,
-                profile_name,
-                profile.profile_type,
-                profile.profile_mode,
+            try:
+                socket_manager.track_applied_profile(
+                    instance_id,
+                    profile_name,
+                    profile.profile_type,
+                    profile.profile_mode,
+                )
+                logger.info(
+                    "Profile tracked successfully",
+                    instance_id=instance_id,
+                    profile=profile_name,
+                    type=profile.profile_type,
+                    mode=profile.profile_mode.value,
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to track profile - exception during tracking",
+                    instance_id=instance_id,
+                    profile=profile_name,
+                    type=profile.profile_type,
+                    mode=profile.profile_mode,
+                    exception=str(e),
+                    exception_type=type(e).__name__,
+                    exc_info=True,
+                )
+        else:
+            logger.warning(
+                "Profile not tracked - mpv returned error",
+                instance_id=instance_id,
+                profile=profile_name,
+                error=result.get("error"),
             )
 
         state = socket_manager.get_standard_state(instance_id)
