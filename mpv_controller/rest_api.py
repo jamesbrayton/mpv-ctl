@@ -1095,9 +1095,7 @@ def create_rest_app(
         """Apply a profile to an mpv instance."""
         logger.info("Apply profile", instance_id=instance_id, profile=profile_name)
 
-        # Get profile with metadata
-        profile = profile_manager.get_profile(profile_name)
-
+        # Send command to mpv FIRST (core functionality)
         result = socket_manager.send_command(
             instance_id,
             ["apply-profile", profile_name],
@@ -1111,9 +1109,11 @@ def create_rest_app(
             mpv_result=result,
         )
 
-        # Track the applied profile if command was successful
+        # Track the applied profile if command was successful (optional feature)
         if result.get("error") == "success":
             try:
+                # Get profile metadata for tracking
+                profile = profile_manager.get_profile(profile_name)
                 socket_manager.track_applied_profile(
                     instance_id,
                     profile_name,

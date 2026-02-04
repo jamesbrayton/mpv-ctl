@@ -991,6 +991,134 @@ class TestApplyProfileEndpoint:
         )
         assert response.status_code == 404
 
+    def test_apply_profile_no_shaders(self, client, socket_manager, profile_manager):
+        """Test applying a profile without glsl-shaders-append (like no-shaders)."""
+        # Create profile without glsl-shaders-append, just glsl-shaders-clr
+        client.post(
+            "/profiles",
+            json={
+                "name": "no-shaders",
+                "options": {
+                    "glsl-shaders-clr": True,
+                    "profile-desc": '"Disable all shaders"',
+                    "x-profile-type": "shader",
+                    "x-profile-mode": "reset",
+                },
+            },
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.track_applied_profile = Mock()
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(
+                pause=False,
+                applied_profiles=["no-shaders"],
+            )
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile", params={"profile_name": "no-shaders"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["applied_profiles"] == ["no-shaders"]
+        
+        # Verify track_applied_profile was called
+        socket_manager.track_applied_profile.assert_called_once()
+        call_args = socket_manager.track_applied_profile.call_args
+        assert call_args[0][0] == "mpv-0"
+        assert call_args[0][1] == "no-shaders"
+        assert call_args[0][2] == "shader"
+        assert call_args[0][3] == ProfileMode.RESET
+
+    def test_apply_profile_vf_off(self, client, socket_manager, profile_manager):
+        """Test applying a vf profile with empty value (like vf-off)."""
+        # Create profile with empty vf value
+        client.post(
+            "/profiles",
+            json={
+                "name": "vf-off",
+                "options": {
+                    "vf": "",
+                    "x-profile-type": "vf",
+                    "x-profile-mode": "reset",
+                },
+            },
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.track_applied_profile = Mock()
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(
+                pause=False,
+                applied_profiles=["vf-off"],
+            )
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile", params={"profile_name": "vf-off"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["applied_profiles"] == ["vf-off"]
+        
+        # Verify track_applied_profile was called
+        socket_manager.track_applied_profile.assert_called_once()
+        call_args = socket_manager.track_applied_profile.call_args
+        assert call_args[0][0] == "mpv-0"
+        assert call_args[0][1] == "vf-off"
+        assert call_args[0][2] == "vf"
+        assert call_args[0][3] == ProfileMode.RESET
+
+    def test_apply_profile_vf_interpolation(self, client, socket_manager, profile_manager):
+        """Test applying a vf interpolation profile (like vf-interp-120)."""
+        # Create vf interpolation profile without glsl-shaders-append
+        client.post(
+            "/profiles",
+            json={
+                "name": "vf-interp-120",
+                "options": {
+                    "vf": "lavfi=minterpolate=fps=120",
+                    "profile-desc": '"minterpolate 120fps (CPU-heavy)"',
+                    "x-profile-type": "vf",
+                    "x-profile-mode": "reset",
+                },
+            },
+        )
+
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        socket_manager.track_applied_profile = Mock()
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(
+                pause=False,
+                applied_profiles=["vf-interp-120"],
+            )
+        )
+
+        response = client.post(
+            "/mpv/mpv-0/profile", params={"profile_name": "vf-interp-120"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command_result"]["success"] is True
+        assert data["state"]["applied_profiles"] == ["vf-interp-120"]
+        
+        # Verify track_applied_profile was called
+        socket_manager.track_applied_profile.assert_called_once()
+        call_args = socket_manager.track_applied_profile.call_args
+        assert call_args[0][0] == "mpv-0"
+        assert call_args[0][1] == "vf-interp-120"
+        assert call_args[0][2] == "vf"
+        assert call_args[0][3] == ProfileMode.RESET
+
 
 class TestPlaylistFileEndpoints:
     """Tests for playlist file management endpoints."""
