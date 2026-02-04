@@ -236,14 +236,14 @@ class TestProfileConfigParsing:
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [test-profile]
-x-profile-type=setting
-x-profile-mode=additive
 vo=gpu
 hwdec=auto
 volume=75
 mute=yes
 pause=no
 speed=1.5
+#x-profile-type=setting
+#x-profile-mode=additive
 """
         profiles_path.write_text(content)
 
@@ -260,15 +260,15 @@ speed=1.5
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [profile-a]
-x-profile-type=shader
-x-profile-mode=reset
 vo=gpu
+#x-profile-type=shader
+#x-profile-mode=reset
 
 [profile-b]
-x-profile-type=setting
-x-profile-mode=additive
 vo=sdl
 hwdec=no
+#x-profile-type=setting
+#x-profile-mode=additive
 """
         profiles_path.write_text(content)
 
@@ -336,7 +336,7 @@ class TestProfileMetadataValidation:
             profile_manager.update_profile("test-profile", {"vo": "sdl"})
 
     def test_parse_profiles_missing_metadata(self, profile_manager, temp_profiles_dir):
-        """Test that parsing profiles without metadata raises error."""
+        """Test that parsing profiles without metadata skips them (tolerant behavior)."""
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [bad-profile]
@@ -345,9 +345,9 @@ hwdec=auto
 """
         profiles_path.write_text(content)
 
-        with pytest.raises(ProfileConfigError) as exc_info:
-            profile_manager.list_profiles()
-        assert "x-profile-type" in str(exc_info.value)
+        # Should not raise - just skip profiles without metadata
+        profiles = profile_manager.list_profiles()
+        assert len(profiles) == 0
 
     def test_shader_profile_type(self, profile_manager):
         """Test creating a shader type profile."""
@@ -412,9 +412,9 @@ class TestProfileParsingEdgeCases:
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [no-shaders]
-x-profile-type=shader
-x-profile-mode=reset
 glsl-shaders-clr
+#x-profile-type=shader
+#x-profile-mode=reset
 """
         profiles_path.write_text(content)
 
@@ -433,9 +433,9 @@ glsl-shaders-clr
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [vf-off]
-x-profile-type=vf
-x-profile-mode=reset
 vf=
+#x-profile-type=vf
+#x-profile-mode=reset
 """
         profiles_path.write_text(content)
 
@@ -454,14 +454,14 @@ vf=
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [mixed-format]
-x-profile-type=shader
-x-profile-mode=reset
 profile-desc="Test profile with mixed formats"
 glsl-shaders-clr
 glsl-shaders-append=~/shaders/test.glsl
 scale=ewa_lanczos
 sharpen=0.5
 vf=
+#x-profile-type=shader
+#x-profile-mode=reset
 """
         profiles_path.write_text(content)
 
@@ -485,10 +485,10 @@ vf=
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [vf-interp-120]
-x-profile-type=vf
-x-profile-mode=reset
 profile-desc="minterpolate 120fps (CPU-heavy)"
 vf=lavfi=minterpolate=fps=120
+#x-profile-type=vf
+#x-profile-mode=reset
 """
         profiles_path.write_text(content)
 
@@ -505,10 +505,10 @@ vf=lavfi=minterpolate=fps=120
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [bloom]
-x-profile-type=shader
-x-profile-mode=additive
 profile-desc="Spiral bloom highlight glow"
 glsl-shaders-append=~~/shaders/fun/bloom-spiral.glsl
+#x-profile-type=shader
+#x-profile-mode=additive
 """
         profiles_path.write_text(content)
 
@@ -523,10 +523,10 @@ glsl-shaders-append=~~/shaders/fun/bloom-spiral.glsl
         profiles_path = temp_profiles_dir / "profiles.conf"
         content = """
 [no-shaders]
-x-profile-type=shader
-x-profile-mode=reset
 profile-desc="Disable all shaders"
 glsl-shaders-clr
+#x-profile-type=shader
+#x-profile-mode=reset
 """
         profiles_path.write_text(content)
 

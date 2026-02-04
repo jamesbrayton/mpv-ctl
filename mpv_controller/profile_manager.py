@@ -77,9 +77,7 @@ class ProfileManager:
 
         Returns:
             Dictionary mapping profile names to their options.
-            
-        Raises:
-            ProfileConfigError: If profile is missing required metadata or has invalid values.
+            Profiles without metadata (x-profile-type, x-profile-mode) are excluded.
         """
         profiles: dict[str, dict[str, Any]] = {}
         current_profile: Optional[str] = None
@@ -87,8 +85,21 @@ class ProfileManager:
         for line in content.splitlines():
             line = line.strip()
 
-            # Skip empty lines and comments
-            if not line or line.startswith("#"):
+            # Skip empty lines
+            if not line:
+                continue
+
+            # Check for metadata in comments: #x-profile-type=shader
+            if line.startswith("#") and current_profile is not None:
+                metadata_match = re.match(r"^#\s*(x-profile-(?:type|mode))\s*=\s*(.+)$", line)
+                if metadata_match:
+                    key = metadata_match.group(1)
+                    value = metadata_match.group(2).strip()
+                    profiles[current_profile][key] = value
+                continue
+
+            # Skip other comments
+            if line.startswith("#"):
                 continue
 
             # Check for profile header [profile-name]
@@ -126,28 +137,39 @@ class ProfileManager:
                     # These are typically flags or commands in mpv
                     profiles[current_profile][line] = True
         
-        # Validate all profiles have required metadata
+        # Filter out profiles without required metadata
+        # This makes the parser tolerant - profiles without metadata are simply ignored
+        valid_profiles = {}
         for profile_name, options in profiles.items():
             # Check for x-profile-type (any string value allowed)
             if "x-profile-type" not in options:
-                raise ProfileConfigError(
-                    f"Profile '{profile_name}' missing required field 'x-profile-type'"
+                logger.debug(
+                    "Skipping profile without x-profile-type metadata",
+                    profile=profile_name
                 )
+                continue
             
             # Check for x-profile-mode (must be 'reset' or 'additive')
             if "x-profile-mode" not in options:
-                raise ProfileConfigError(
-                    f"Profile '{profile_name}' missing required field 'x-profile-mode'"
+                logger.debug(
+                    "Skipping profile without x-profile-mode metadata",
+                    profile=profile_name
                 )
+                continue
             
             profile_mode = options["x-profile-mode"]
             if profile_mode not in ["reset", "additive"]:
-                raise ProfileConfigError(
-                    f"Profile '{profile_name}' has invalid x-profile-mode value '{profile_mode}'. "
-                    "Must be 'reset' or 'additive'"
+                logger.warning(
+                    "Skipping profile with invalid x-profile-mode value",
+                    profile=profile_name,
+                    mode=profile_mode
                 )
+                continue
+            
+            # Profile has valid metadata - include it
+            valid_profiles[profile_name] = options
 
-        return profiles
+        return valid_profiles
 
     def _serialize_profiles_config(
         self, profiles: dict[str, dict[str, Any]]
@@ -164,12 +186,25 @@ class ProfileManager:
 
         for name, options in profiles.items():
             lines.append(f"[{name}]")
+            
+            # Write regular mpv options first
             for key, value in options.items():
+                # Skip metadata - we'll write it as comments at the end
+                if key in ("x-profile-type", "x-profile-mode"):
+                    continue
+                    
                 if isinstance(value, bool):
                     value_str = "yes" if value else "no"
                 else:
                     value_str = str(value)
                 lines.append(f"{key}={value_str}")
+            
+            # Write metadata as comments at the end of the profile
+            if "x-profile-type" in options:
+                lines.append(f"#x-profile-type={options['x-profile-type']}")
+            if "x-profile-mode" in options:
+                lines.append(f"#x-profile-mode={options['x-profile-mode']}")
+            
             lines.append("")
 
         return "\n".join(lines)

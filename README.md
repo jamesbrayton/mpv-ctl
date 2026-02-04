@@ -341,49 +341,56 @@ Profiles must include metadata fields that control tracking behavior:
 
 **Profile Metadata Requirements:**
 
-All profiles require two metadata fields (mpv ignores these `x-` prefixed fields):
+All profiles require two metadata fields as **comments** (mpv will ignore them entirely):
 
-- **x-profile-type**: Type of configuration (e.g., `shader`, `setting`, `vf`, `ao`)
+- **#x-profile-type**: Type of configuration (e.g., `shader`, `setting`, `vf`, `ao`)
   - Use any string value to categorize your profiles
   - Common types: `shader` (GLSL shaders), `setting` (general settings), `vf` (video filters), `ao` (audio output)
   - Reset behavior matches profiles by type - resetting a `vf` profile clears all other `vf` profiles
 
-- **x-profile-mode**: Application mode (`reset` or `additive`)
+- **#x-profile-mode**: Application mode (`reset` or `additive`)
   - `reset`: Clears all previously applied profiles of the same type
   - `additive`: Adds to existing profiles of the same type
+
+**Important:** Metadata fields **must be written as comments** (starting with `#`). This ensures mpv completely ignores them while mpv-controller can still parse and use them for tracking. Profiles without these metadata comments are silently ignored by the API.
 
 **Example Profile Configuration:**
 
 ```ini
 # Shader profile with reset mode (clears other shaders)
 [anime4k-medium]
-x-profile-type=shader
-x-profile-mode=reset
 profile-desc=Anime4K Medium Quality
 glsl-shaders-clr
 glsl-shaders-append=~~/shaders/Anime4K_Upscale_L.glsl
 glsl-shaders-append=~~/shaders/Anime4K_Auto_Downscale.glsl
+#x-profile-type=shader
+#x-profile-mode=reset
 
 # Setting profile with additive mode (stacks with other settings)
 [debanding]
-x-profile-type=setting
-x-profile-mode=additive
 profile-desc=Enable debanding filter
 vf=gradfun=radius=16
+#x-profile-type=setting
+#x-profile-mode=additive
 
 # Custom type for video filters
 [deinterlace]
-x-profile-type=vf
-x-profile-mode=reset
 profile-desc=Deinterlacing filter
 vf=yadif
+#x-profile-type=vf
+#x-profile-mode=reset
 
 # Clear all shaders
 [none]
-x-profile-type=shader
-x-profile-mode=reset
 profile-desc=Clear all shaders
 glsl-shaders-clr
+#x-profile-type=shader
+#x-profile-mode=reset
+
+# This profile will be ignored (no metadata)
+[my-custom-profile]
+vo=gpu
+# No x-profile-type or x-profile-mode, so API won't expose it
 ```
 
 **List All Profiles:**
