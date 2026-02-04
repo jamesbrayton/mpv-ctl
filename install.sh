@@ -184,14 +184,20 @@ if [ "$UPGRADE" = true ]; then
     echo "Next steps:"
     if [ "$MISSING_CONFIG" = true ]; then
         echo "  1. Update configuration with new sections (see above)"
-        echo "  2. Start service:      systemctl --user start mpv-controller"
-        echo "  3. Check status:       systemctl --user status mpv-controller"
-        echo "  4. View logs:          journalctl --user -u mpv-controller -f"
+        echo "  2. Reload systemd and restart:  systemctl --user daemon-reload && systemctl --user restart mpv-controller"
+        echo "  3. Check status:                systemctl --user status mpv-controller"
+        echo "  4. View logs:                   journalctl --user -u mpv-controller -f"
     else
-        echo "  1. Start service:      systemctl --user start mpv-controller"
-        echo "  2. Check status:       systemctl --user status mpv-controller"
-        echo "  3. View logs:          journalctl --user -u mpv-controller -f"
+        echo "  1. Reload systemd and restart:  systemctl --user daemon-reload && systemctl --user restart mpv-controller"
+        echo "  2. Check status:                systemctl --user status mpv-controller"
+        echo "  3. View logs:                   journalctl --user -u mpv-controller -f"
     fi
+    echo
+    echo -e "${YELLOW}Note:${NC} After editing config.yaml or profiles.conf, always run:"
+    echo "      systemctl --user daemon-reload"
+    echo "      systemctl --user restart mpv-controller"
+    echo "      # If using mpv systemd services, also restart them:"
+    echo "      systemctl --user restart 'mpv@*'"
 else
     echo "Next steps:"
     echo "  1. Edit configuration: ${CONFIG_DIR}/config.yaml"
@@ -199,6 +205,12 @@ else
     echo "  3. Start service:      systemctl --user start mpv-controller"
     echo "  4. Check status:       systemctl --user status mpv-controller"
     echo "  5. View logs:          journalctl --user -u mpv-controller -f"
+    echo
+    echo -e "${YELLOW}Important:${NC} After editing config.yaml or profiles.conf, always run:"
+    echo "           systemctl --user daemon-reload"
+    echo "           systemctl --user restart mpv-controller"
+    echo "           # If using mpv systemd services, also restart them:"
+    echo "           systemctl --user restart 'mpv@*'"
 fi
 echo
 echo "API Documentation will be available at: http://localhost:8000/docs"

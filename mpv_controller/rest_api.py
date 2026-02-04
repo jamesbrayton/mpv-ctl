@@ -1095,17 +1095,17 @@ def create_rest_app(
         """Apply a profile to an mpv instance."""
         logger.info("Apply profile", instance_id=instance_id, profile=profile_name)
 
-        # Pre-validate profile exists (fail fast for user errors)
-        # but don't extract metadata yet to avoid blocking
+        # Get profile metadata for validation and tracking
+        profile = None
         try:
-            profile_manager.get_profile(profile_name)
+            profile = profile_manager.get_profile(profile_name)
         except ProfileNotFoundError:
             # Re-raise to let exception handler return 404
             raise
         except Exception as e:
-            # Log but continue - validation failed but profile might still work
+            # Log but continue - validation failed but profile might still work in mpv
             logger.warning(
-                "Profile validation failed, attempting anyway",
+                "Profile metadata retrieval failed, will apply but cannot track",
                 instance_id=instance_id,
                 profile=profile_name,
                 error=str(e),
@@ -1125,11 +1125,9 @@ def create_rest_app(
             mpv_result=result,
         )
 
-        # Track the applied profile if command was successful (optional feature)
-        if result.get("error") == "success":
+        # Track the applied profile if command was successful AND we have metadata
+        if result.get("error") == "success" and profile is not None:
             try:
-                # Get profile metadata for tracking
-                profile = profile_manager.get_profile(profile_name)
                 socket_manager.track_applied_profile(
                     instance_id,
                     profile_name,
