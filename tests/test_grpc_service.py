@@ -12,9 +12,12 @@ from mpv_controller.models import (
     InstanceNotFoundError,
     MpvPlaylistItem,
     MpvState,
+    ProfileInfo,
+    ProfileMode,
     SocketConnectionError,
     SocketTimeoutError,
 )
+from mpv_controller.profile_manager import ProfileManager, ProfileNotFoundError
 from mpv_controller.mpv_control_pb2 import (
     HealthCheckRequest,
     InstanceRequest,
@@ -85,9 +88,15 @@ def socket_manager(mock_config):
 
 
 @pytest.fixture
-def service(mock_config, socket_manager):
+def profile_manager():
+    """Create a mock profile manager."""
+    return Mock(spec=ProfileManager)
+
+
+@pytest.fixture
+def service(mock_config, socket_manager, profile_manager):
     """Create gRPC service instance."""
-    return MpvControllerService(mock_config, socket_manager)
+    return MpvControllerService(mock_config, socket_manager, profile_manager)
 
 
 @pytest.fixture
@@ -614,13 +623,169 @@ class TestHelperMethods:
         assert not proto_state.HasField("time_pos")
         assert not proto_state.HasField("duration")
 
+    def test_remove_profile_success(self, service, socket_manager, profile_manager, context):
+        """Test RemoveProfile successfully removes a shader profile."""
+        from mpv_controller.mpv_control_pb2 import RemoveProfileRequest
+        
+        # Mock applied profiles
+        socket_manager.get_applied_profiles = Mock(return_value=["anime4k"])
+        
+        # Mock profile metadata
+        profile = ProfileInfo(
+            name="anime4k",
+            options={
+                "glsl-shaders-append": [
+                    "~~/shaders/Anime4K_Clamp_Highlights.glsl",
+                    "~~/shaders/Anime4K_Upscale_DoG.glsl",
+                ]
+            },
+            profile_type="shader",
+            profile_mode=ProfileMode.ADDITIVE,
+        )
+        profile_manager.get_profile = Mock(return_value=profile)
+        
+        # Mock shader removal
+        socket_manager.send_command = Mock(
+            return_value={"error": "success", "data": None}
+        )
+        
+        # Mock tracking state
+        socket_manager._applied_profiles = {
+            "mpv-0": [("anime4k", "shader"), ("other-profile", "setting")]
+        }
+        
+        # Mock state
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(
+                pause=False,
+                time_pos=120.5,
+                duration=300.0,
+                volume=100.0,
+                filename="test.mp4",
+            )
+        )
+        
+        request = RemoveProfileRequest(instance_id="mpv-0", profile_name="anime4k")
+        response = service.RemoveProfile(request, context)
+        
+        assert response.command_result.success is True
+        result_data = json.loads(response.command_result.data_json)
+        assert result_data["shaders_removed"] == 2
+        
+        # Check shaders were removed in reverse order
+        assert socket_manager.send_command.call_count == 2
+        calls = socket_manager.send_command.call_args_list
+        assert calls[0][0] == (
+            "mpv-0",
+            ["change-list", "glsl-shaders", "remove", "~~/shaders/Anime4K_Upscale_DoG.glsl"],
+        )
+        assert calls[1][0] == (
+            "mpv-0",
+            ["change-list", "glsl-shaders", "remove", "~~/shaders/Anime4K_Clamp_Highlights.glsl"],
+        )
+        
+        # Check profile was removed from tracking
+        assert socket_manager._applied_profiles["mpv-0"] == [("other-profile", "setting")]
+
+    def test_remove_profile_not_applied(self, service, socket_manager, profile_manager, context):
+        """Test RemoveProfile returns error when profile is not applied."""
+        from mpv_controller.mpv_control_pb2 import RemoveProfileRequest
+        
+        socket_manager.get_applied_profiles = Mock(return_value=["other-profile"])
+        
+        request = RemoveProfileRequest(instance_id="mpv-0", profile_name="anime4k")
+        response = service.RemoveProfile(request, context)
+        
+        assert response.command_result.success is False
+        assert response.error.code == "PROFILE_NOT_APPLIED"
+        assert "not currently applied" in response.error.message
+
+    def test_remove_profile_not_shader_type(self, service, socket_manager, profile_manager, context):
+        """Test RemoveProfile returns error for non-shader profiles."""
+        from mpv_controller.mpv_control_pb2 import RemoveProfileRequest
+        
+        socket_manager.get_applied_profiles = Mock(return_value=["quality-high"])
+        
+        profile = ProfileInfo(
+            name="quality-high",
+            options={"profile-desc": "High quality"},
+            profile_type="setting",
+            profile_mode=ProfileMode.RESET,
+        )
+        profile_manager.get_profile = Mock(return_value=profile)
+        
+        request = RemoveProfileRequest(instance_id="mpv-0", profile_name="quality-high")
+        response = service.RemoveProfile(request, context)
+        
+        assert response.command_result.success is False
+        assert response.error.code == "PROFILE_TYPE_NOT_REMOVABLE"
+        assert "Only shader profiles can be removed" in response.error.message
+
+    def test_remove_profile_not_found(self, service, socket_manager, profile_manager, context):
+        """Test RemoveProfile when profile doesn't exist in config."""
+        from mpv_controller.mpv_control_pb2 import RemoveProfileRequest
+        
+        socket_manager.get_applied_profiles = Mock(return_value=["nonexistent"])
+        profile_manager.get_profile = Mock(side_effect=ProfileNotFoundError("nonexistent"))
+        
+        request = RemoveProfileRequest(instance_id="mpv-0", profile_name="nonexistent")
+        response = service.RemoveProfile(request, context)
+        
+        assert response.command_result.success is False
+        assert response.error is not None
+
+    def test_remove_profile_with_shader_removal_errors(self, service, socket_manager, profile_manager, context):
+        """Test RemoveProfile when shader removal partially fails."""
+        from mpv_controller.mpv_control_pb2 import RemoveProfileRequest
+        
+        socket_manager.get_applied_profiles = Mock(return_value=["anime4k"])
+        
+        profile = ProfileInfo(
+            name="anime4k",
+            options={
+                "glsl-shaders-append": [
+                    "~~/shaders/shader1.glsl",
+                    "~~/shaders/shader2.glsl",
+                ]
+            },
+            profile_type="shader",
+            profile_mode=ProfileMode.ADDITIVE,
+        )
+        profile_manager.get_profile = Mock(return_value=profile)
+        
+        # First shader removal succeeds, second fails
+        def send_command_side_effect(instance_id, command):
+            if command[3] == "~~/shaders/shader1.glsl":
+                return {"error": "success", "data": None}
+            else:
+                return {"error": "shader not found", "data": None}
+        
+        socket_manager.send_command = Mock(side_effect=send_command_side_effect)
+        socket_manager._applied_profiles = {"mpv-0": [("anime4k", "shader")]}
+        socket_manager.get_standard_state = Mock(
+            return_value=MpvState(pause=False, filename="test.mp4")
+        )
+        
+        request = RemoveProfileRequest(instance_id="mpv-0", profile_name="anime4k")
+        response = service.RemoveProfile(request, context)
+        
+        # Should mark as not successful due to errors
+        assert response.command_result.success is False
+        result_data = json.loads(response.command_result.data_json)
+        assert result_data["shaders_removed"] == 2
+        assert "errors" in result_data
+        assert len(result_data["errors"]) == 1
+        
+        # Profile should still be removed from tracking
+        assert socket_manager._applied_profiles["mpv-0"] == []
+
 
 class TestCreateGrpcServer:
     """Tests for create_grpc_server function."""
 
-    def test_create_grpc_server(self, mock_config, socket_manager):
+    def test_create_grpc_server(self, mock_config, socket_manager, profile_manager):
         """Test gRPC server creation."""
-        server = create_grpc_server(mock_config, socket_manager)
+        server = create_grpc_server(mock_config, socket_manager, profile_manager)
 
         assert server is not None
         # Server should be configured but not started

@@ -22,6 +22,9 @@ service MpvController {
     // Raw command execution
     rpc SendRawCommand(RawCommandRequest) returns (CommandResponse);
 
+    // Profile management
+    rpc RemoveProfile(RemoveProfileRequest) returns (CommandResponse);
+
     // Health checks
     rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
 }
@@ -54,6 +57,12 @@ message PropertyRequest {
 message RawCommandRequest {
     string instance_id = 1;
     repeated string command = 2;
+}
+
+// Request for removing an applied profile
+message RemoveProfileRequest {
+    string instance_id = 1;
+    string profile_name = 2;
 }
 
 // Health check request

@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from mpv_controller import mpv_control_pb2 as mpv__controller_dot_mpv__control__pb2
+from . import mpv_control_pb2 as mpv__control__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in mpv_controller/mpv_control_pb2_grpc.py depends on'
+        + ' but the generated code in mpv_control_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -37,68 +37,73 @@ class MpvControllerStub(object):
         """
         self.Pause = channel.unary_unary(
                 '/mpv_controller.MpvController/Pause',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.Play = channel.unary_unary(
                 '/mpv_controller.MpvController/Play',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.Seek = channel.unary_unary(
                 '/mpv_controller.MpvController/Seek',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.SeekRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.SeekRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.SetVolume = channel.unary_unary(
                 '/mpv_controller.MpvController/SetVolume',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.VolumeRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.VolumeRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.VolumeUp = channel.unary_unary(
                 '/mpv_controller.MpvController/VolumeUp',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.VolumeDown = channel.unary_unary(
                 '/mpv_controller.MpvController/VolumeDown',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.Mute = channel.unary_unary(
                 '/mpv_controller.MpvController/Mute',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.Loop = channel.unary_unary(
                 '/mpv_controller.MpvController/Loop',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.Shuffle = channel.unary_unary(
                 '/mpv_controller.MpvController/Shuffle',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.GetProperty = channel.unary_unary(
                 '/mpv_controller.MpvController/GetProperty',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.PropertyRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.PropertyResponse.FromString,
+                request_serializer=mpv__control__pb2.PropertyRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.PropertyResponse.FromString,
                 _registered_method=True)
         self.GetStatus = channel.unary_unary(
                 '/mpv_controller.MpvController/GetStatus',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.InstanceRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.SendRawCommand = channel.unary_unary(
                 '/mpv_controller.MpvController/SendRawCommand',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.RawCommandRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+                request_serializer=mpv__control__pb2.RawCommandRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
+                _registered_method=True)
+        self.RemoveProfile = channel.unary_unary(
+                '/mpv_controller.MpvController/RemoveProfile',
+                request_serializer=mpv__control__pb2.RemoveProfileRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.CommandResponse.FromString,
                 _registered_method=True)
         self.Check = channel.unary_unary(
                 '/mpv_controller.MpvController/Check',
-                request_serializer=mpv__controller_dot_mpv__control__pb2.HealthCheckRequest.SerializeToString,
-                response_deserializer=mpv__controller_dot_mpv__control__pb2.HealthCheckResponse.FromString,
+                request_serializer=mpv__control__pb2.HealthCheckRequest.SerializeToString,
+                response_deserializer=mpv__control__pb2.HealthCheckResponse.FromString,
                 _registered_method=True)
 
 
@@ -181,6 +186,13 @@ class MpvControllerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RemoveProfile(self, request, context):
+        """Profile management
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Check(self, request, context):
         """Health checks
         """
@@ -193,68 +205,73 @@ def add_MpvControllerServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Pause': grpc.unary_unary_rpc_method_handler(
                     servicer.Pause,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'Play': grpc.unary_unary_rpc_method_handler(
                     servicer.Play,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'Seek': grpc.unary_unary_rpc_method_handler(
                     servicer.Seek,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.SeekRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.SeekRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'SetVolume': grpc.unary_unary_rpc_method_handler(
                     servicer.SetVolume,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.VolumeRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.VolumeRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'VolumeUp': grpc.unary_unary_rpc_method_handler(
                     servicer.VolumeUp,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'VolumeDown': grpc.unary_unary_rpc_method_handler(
                     servicer.VolumeDown,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'Mute': grpc.unary_unary_rpc_method_handler(
                     servicer.Mute,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'Loop': grpc.unary_unary_rpc_method_handler(
                     servicer.Loop,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'Shuffle': grpc.unary_unary_rpc_method_handler(
                     servicer.Shuffle,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'GetProperty': grpc.unary_unary_rpc_method_handler(
                     servicer.GetProperty,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.PropertyRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.PropertyResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.PropertyRequest.FromString,
+                    response_serializer=mpv__control__pb2.PropertyResponse.SerializeToString,
             ),
             'GetStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.GetStatus,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.InstanceRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.InstanceRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'SendRawCommand': grpc.unary_unary_rpc_method_handler(
                     servicer.SendRawCommand,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.RawCommandRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.CommandResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.RawCommandRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
+            ),
+            'RemoveProfile': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemoveProfile,
+                    request_deserializer=mpv__control__pb2.RemoveProfileRequest.FromString,
+                    response_serializer=mpv__control__pb2.CommandResponse.SerializeToString,
             ),
             'Check': grpc.unary_unary_rpc_method_handler(
                     servicer.Check,
-                    request_deserializer=mpv__controller_dot_mpv__control__pb2.HealthCheckRequest.FromString,
-                    response_serializer=mpv__controller_dot_mpv__control__pb2.HealthCheckResponse.SerializeToString,
+                    request_deserializer=mpv__control__pb2.HealthCheckRequest.FromString,
+                    response_serializer=mpv__control__pb2.HealthCheckResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -283,8 +300,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Pause',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -310,8 +327,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Play',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -337,8 +354,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Seek',
-            mpv__controller_dot_mpv__control__pb2.SeekRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.SeekRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -364,8 +381,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/SetVolume',
-            mpv__controller_dot_mpv__control__pb2.VolumeRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.VolumeRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -391,8 +408,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/VolumeUp',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -418,8 +435,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/VolumeDown',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -445,8 +462,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Mute',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -472,8 +489,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Loop',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -499,8 +516,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Shuffle',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -526,8 +543,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/GetProperty',
-            mpv__controller_dot_mpv__control__pb2.PropertyRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.PropertyResponse.FromString,
+            mpv__control__pb2.PropertyRequest.SerializeToString,
+            mpv__control__pb2.PropertyResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -553,8 +570,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/GetStatus',
-            mpv__controller_dot_mpv__control__pb2.InstanceRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.InstanceRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -580,8 +597,35 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/SendRawCommand',
-            mpv__controller_dot_mpv__control__pb2.RawCommandRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.CommandResponse.FromString,
+            mpv__control__pb2.RawCommandRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RemoveProfile(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mpv_controller.MpvController/RemoveProfile',
+            mpv__control__pb2.RemoveProfileRequest.SerializeToString,
+            mpv__control__pb2.CommandResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -607,8 +651,8 @@ class MpvController(object):
             request,
             target,
             '/mpv_controller.MpvController/Check',
-            mpv__controller_dot_mpv__control__pb2.HealthCheckRequest.SerializeToString,
-            mpv__controller_dot_mpv__control__pb2.HealthCheckResponse.FromString,
+            mpv__control__pb2.HealthCheckRequest.SerializeToString,
+            mpv__control__pb2.HealthCheckResponse.FromString,
             options,
             channel_credentials,
             insecure,

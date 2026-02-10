@@ -89,9 +89,9 @@ class ProfileManager:
             if not line:
                 continue
 
-            # Check for metadata in comments: #x-profile-type=shader
+            # Check for metadata in comments: #x-profile-type=shader, #x-profile-mode=reset, #x-profile-track=false
             if line.startswith("#") and current_profile is not None:
-                metadata_match = re.match(r"^#\s*(x-profile-(?:type|mode))\s*=\s*(.+)$", line)
+                metadata_match = re.match(r"^#\s*(x-profile-(?:type|mode|track))\s*=\s*(.+)$", line)
                 if metadata_match:
                     key = metadata_match.group(1)
                     value = metadata_match.group(2).strip()
@@ -158,7 +158,7 @@ class ProfileManager:
                 continue
             
             profile_mode = options["x-profile-mode"]
-            if profile_mode not in ["reset", "additive"]:
+            if profile_mode not in ["reset", "additive", "reset,additive"]:
                 logger.warning(
                     "Skipping profile with invalid x-profile-mode value",
                     profile=profile_name,
@@ -204,6 +204,8 @@ class ProfileManager:
                 lines.append(f"#x-profile-type={options['x-profile-type']}")
             if "x-profile-mode" in options:
                 lines.append(f"#x-profile-mode={options['x-profile-mode']}")
+            if "x-profile-track" in options:
+                lines.append(f"#x-profile-track={options['x-profile-track']}")
             
             lines.append("")
 
@@ -233,6 +235,12 @@ class ProfileManager:
             profile_type = options["x-profile-type"]
             profile_mode = ProfileMode(options["x-profile-mode"])
             
+            # Parse track field (default True if not specified)
+            track = True
+            if "x-profile-track" in options:
+                track_value = options["x-profile-track"].lower()
+                track = track_value in ["true", "yes", "1"]
+            
             # Create a copy of options without the metadata fields (mpv should ignore them, but clean response)
             options_copy = options.copy()
             
@@ -248,6 +256,7 @@ class ProfileManager:
                     options=options_copy,
                     profile_type=profile_type,
                     profile_mode=profile_mode,
+                    track=track,
                 )
             )
 
@@ -283,6 +292,12 @@ class ProfileManager:
         profile_type = options["x-profile-type"]
         profile_mode = ProfileMode(options["x-profile-mode"])
         
+        # Parse track field (default True if not specified)
+        track = True
+        if "x-profile-track" in options:
+            track_value = options["x-profile-track"].lower()
+            track = track_value in ["true", "yes", "1"]
+        
         # Create a copy of options
         options_copy = options.copy()
         
@@ -297,6 +312,7 @@ class ProfileManager:
             options=options_copy,
             profile_type=profile_type,
             profile_mode=profile_mode,
+            track=track,
         )
 
     def create_profile(self, name: str, options: dict[str, Any]) -> ProfileInfo:
@@ -329,10 +345,10 @@ class ProfileManager:
         profile_type_str = options["x-profile-type"]
         
         profile_mode_str = options["x-profile-mode"]
-        if profile_mode_str not in ["reset", "additive"]:
+        if profile_mode_str not in ["reset", "additive", "reset,additive"]:
             raise ProfileConfigError(
                 f"Profile '{name}' has invalid x-profile-mode value '{profile_mode_str}'. "
-                "Must be 'reset' or 'additive'"
+                "Must be 'reset', 'additive', or 'reset,additive'"
             )
 
         profiles: dict[str, dict[str, Any]] = {}
@@ -352,12 +368,19 @@ class ProfileManager:
         # Write updated config
         profiles_path.write_text(self._serialize_profiles_config(profiles))
 
+        # Parse track field (default True if not specified)
+        track = True
+        if "x-profile-track" in options:
+            track_value = options["x-profile-track"].lower()
+            track = track_value in ["true", "yes", "1"]
+        
         logger.info("Created profile", name=name)
         return ProfileInfo(
             name=name,
             options=options,
             profile_type=profile_type_str,
             profile_mode=ProfileMode(profile_mode_str),
+            track=track,
         )
 
     def update_profile(self, name: str, options: dict[str, Any]) -> ProfileInfo:
@@ -390,10 +413,10 @@ class ProfileManager:
         profile_type_str = options["x-profile-type"]
         
         profile_mode_str = options["x-profile-mode"]
-        if profile_mode_str not in ["reset", "additive"]:
+        if profile_mode_str not in ["reset", "additive", "reset,additive"]:
             raise ProfileConfigError(
                 f"Profile '{name}' has invalid x-profile-mode value '{profile_mode_str}'. "
-                "Must be 'reset' or 'additive'"
+                "Must be 'reset', 'additive', or 'reset,additive'"
             )
 
         if not profiles_path.exists():
@@ -410,12 +433,19 @@ class ProfileManager:
         # Write updated config
         profiles_path.write_text(self._serialize_profiles_config(profiles))
 
+        # Parse track field (default True if not specified)
+        track = True
+        if "x-profile-track" in options:
+            track_value = options["x-profile-track"].lower()
+            track = track_value in ["true", "yes", "1"]
+
         logger.info("Updated profile", name=name)
         return ProfileInfo(
             name=name,
             options=options,
             profile_type=profile_type_str,
             profile_mode=ProfileMode(profile_mode_str),
+            track=track,
         )
 
     def delete_profile(self, name: str) -> None:

@@ -348,9 +348,14 @@ All profiles require two metadata fields as **comments** (mpv will ignore them e
   - Common types: `shader` (GLSL shaders), `setting` (general settings), `vf` (video filters), `ao` (audio output)
   - Reset behavior matches profiles by type - resetting a `vf` profile clears all other `vf` profiles
 
-- **#x-profile-mode**: Application mode (`reset` or `additive`)
+- **#x-profile-mode**: Application mode (`reset`, `additive`, or `reset,additive`)
   - `reset`: Clears all previously applied profiles of the same type
   - `additive`: Adds to existing profiles of the same type
+  - `reset,additive`: Clears profiles of same type, then adds this profile (hybrid mode, v0.4.0+)
+
+- **#x-profile-track** (optional, v0.4.0+): Whether to track in `applied_profiles` list (`true` or `false`)
+  - Default: `true` (profile appears in applied profiles list)
+  - `false`: Profile applies but doesn't appear in tracking (useful for clearing profiles like `no-shaders`)
 
 **Important:** Metadata fields **must be written as comments** (starting with `#`). This ensures mpv completely ignores them while mpv-controller can still parse and use them for tracking. Profiles without these metadata comments are silently ignored by the API.
 
@@ -380,12 +385,22 @@ vf=yadif
 #x-profile-type=vf
 #x-profile-mode=reset
 
-# Clear all shaders
-[none]
+# Clear all shaders (not tracked in applied_profiles, v0.4.0+)
+[no-shaders]
 profile-desc=Clear all shaders
 glsl-shaders-clr
 #x-profile-type=shader
 #x-profile-mode=reset
+#x-profile-track=false
+
+# Hybrid mode: clear then set (v0.4.0+)
+[nature]
+profile-desc=Nature-optimized shader stack
+glsl-shaders-clr
+glsl-shaders-append=~~/shaders/denoise.glsl
+glsl-shaders-append=~~/shaders/sharpen.glsl
+#x-profile-type=shader
+#x-profile-mode=reset,additive
 
 # This profile will be ignored (no metadata)
 [my-custom-profile]
@@ -458,6 +473,18 @@ The status response includes `applied_profiles` showing which profiles are curre
   }
 }
 ```
+
+**Remove Applied Profile (v0.4.0+, shader profiles only):**
+
+```bash
+curl -X DELETE http://localhost:8000/instances/mpv-0/profiles/bloom
+```
+
+Removes a previously applied shader profile by:
+1. Removing all shaders defined in the profile from the glsl stack
+2. Removing the profile from the `applied_profiles` tracking list
+
+Note: Only shader profiles can be removed. Other profile types return 400 error.
 
 #### Playlist File Management
 

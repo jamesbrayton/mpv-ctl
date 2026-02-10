@@ -91,7 +91,7 @@ def main():
         logger.info("REST API configured", port=config.server.rest_port)
         
         # Create gRPC server
-        grpc_server = create_grpc_server(config, socket_manager)
+        grpc_server = create_grpc_server(config, socket_manager, profile_manager)
         logger.info("gRPC server configured", port=config.server.grpc_port)
         
         # Setup shutdown handler

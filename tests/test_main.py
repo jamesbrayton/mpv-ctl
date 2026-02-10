@@ -183,7 +183,7 @@ class TestMain:
             mock_profile_manager,
             mock_playlist_manager,
         )
-        mock_create_grpc.assert_called_once_with(mock_config, mock_socket_manager)
+        mock_create_grpc.assert_called_once_with(mock_config, mock_socket_manager, mock_profile_manager)
 
         # Verify servers started
         mock_grpc_server.start.assert_called_once()
@@ -375,7 +375,8 @@ class TestMain:
         main()
 
         # Verify gRPC server created with correct parameters
-        mock_create_grpc.assert_called_once_with(mock_config, mock_socket_manager)
+        mock_profile_manager_instance = mock_profile_mgr.return_value
+        mock_create_grpc.assert_called_once_with(mock_config, mock_socket_manager, mock_profile_manager_instance)
 
         # Verify gRPC server started
         mock_grpc_server.start.assert_called_once()

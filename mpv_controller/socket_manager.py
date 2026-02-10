@@ -333,6 +333,7 @@ class MpvSocketManager:
         profile_name: str,
         profile_type: str,
         profile_mode: ProfileMode,
+        track: bool = True,
     ) -> None:
         """Track applied profile with type-specific reset logic.
 
@@ -340,12 +341,13 @@ class MpvSocketManager:
             instance_id: ID of the mpv instance.
             profile_name: Name of the applied profile.
             profile_type: Type of profile (e.g., 'shader', 'setting', 'vf', 'ao').
-            profile_mode: Application mode (reset or additive).
+            profile_mode: Application mode (reset, additive, or reset,additive).
+            track: Whether to add this profile to the tracking list (default True).
         """
         if instance_id not in self._applied_profiles:
             self._applied_profiles[instance_id] = []
 
-        if profile_mode == ProfileMode.RESET:
+        if profile_mode in (ProfileMode.RESET, ProfileMode.RESET_ADDITIVE):
             # Remove all profiles of the same type
             self._applied_profiles[instance_id] = [
                 (name, ptype)
@@ -353,8 +355,9 @@ class MpvSocketManager:
                 if ptype != profile_type
             ]
 
-        # Add the new profile
-        self._applied_profiles[instance_id].append((profile_name, profile_type))
+        # Add the new profile only if track=True
+        if track:
+            self._applied_profiles[instance_id].append((profile_name, profile_type))
 
         logger.debug(
             "Tracked applied profile",
@@ -362,6 +365,7 @@ class MpvSocketManager:
             profile=profile_name,
             type=profile_type,
             mode=profile_mode.value,
+            tracked=track,
             current_profiles=[name for name, _ in self._applied_profiles[instance_id]],
         )
 

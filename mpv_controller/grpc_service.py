@@ -7,7 +7,8 @@ import grpc
 import structlog
 
 from .config import Config
-from .models import ErrorCode, MpvControllerError
+from .models import ErrorCode, InstanceNotFoundError, MpvControllerError
+from .profile_manager import ProfileManager, ProfileNotFoundError
 from .mpv_control_pb2 import (
     CommandResponse,
     CommandResult,
@@ -29,15 +30,17 @@ logger = structlog.get_logger()
 class MpvControllerService(MpvControllerServicer):
     """gRPC service implementation for mpv controller."""
 
-    def __init__(self, config: Config, socket_manager: MpvSocketManager):
+    def __init__(self, config: Config, socket_manager: MpvSocketManager, profile_manager: ProfileManager):
         """Initialize the service.
 
         Args:
             config: Application configuration.
             socket_manager: Socket manager for mpv communication.
+            profile_manager: Profile manager for mpv profiles.
         """
         self.config = config
         self.socket_manager = socket_manager
+        self.profile_manager = profile_manager
 
     def _create_error_detail(self, error: MpvControllerError) -> ErrorDetail:
         """Create an ErrorDetail message from an exception.
@@ -468,6 +471,148 @@ class MpvControllerService(MpvControllerServicer):
                 error=self._create_error_detail(e),
             )
 
+    def RemoveProfile(self, request, context):
+        """Remove an applied profile from an mpv instance."""
+        try:
+            logger.info(
+                "gRPC RemoveProfile",
+                instance_id=request.instance_id,
+                profile=request.profile_name,
+            )
+
+            # Check if profile is currently applied
+            applied_profiles = self.socket_manager.get_applied_profiles(request.instance_id)
+            if request.profile_name not in applied_profiles:
+                error_detail = ErrorDetail(
+                    code="PROFILE_NOT_APPLIED",
+                    message=f"Profile '{request.profile_name}' is not currently applied to instance '{request.instance_id}'",
+                    details_json=json.dumps({
+                        "instance_id": request.instance_id,
+                        "profile": request.profile_name,
+                        "applied_profiles": applied_profiles,
+                    }),
+                )
+                return CommandResponse(
+                    command_result=CommandResult(success=False),
+                    instance_id=request.instance_id,
+                    error=error_detail,
+                )
+
+            # Get profile metadata
+            try:
+                profile = self.profile_manager.get_profile(request.profile_name)
+            except ProfileNotFoundError as e:
+                logger.error("Profile not found", profile=request.profile_name)
+                error_detail = ErrorDetail(
+                    code="PROFILE_NOT_FOUND",
+                    message=str(e),
+                    details_json=json.dumps({"profile": request.profile_name}),
+                )
+                return CommandResponse(
+                    command_result=CommandResult(success=False),
+                    instance_id=request.instance_id,
+                    error=error_detail,
+                )
+
+            # Only shader profiles can be properly removed
+            if profile.profile_type != "shader":
+                error_detail = ErrorDetail(
+                    code="PROFILE_TYPE_NOT_REMOVABLE",
+                    message=f"Only shader profiles can be removed. Profile '{request.profile_name}' is type '{profile.profile_type}'",
+                    details_json=json.dumps({
+                        "instance_id": request.instance_id,
+                        "profile": request.profile_name,
+                        "profile_type": profile.profile_type,
+                    }),
+                )
+                return CommandResponse(
+                    command_result=CommandResult(success=False),
+                    instance_id=request.instance_id,
+                    error=error_detail,
+                )
+
+            # Extract shaders from profile options
+            shaders_to_remove = []
+            for key, value in profile.options.items():
+                if key == "glsl-shaders-append":
+                    # Normalize to list
+                    if isinstance(value, str):
+                        shaders_to_remove.append(value)
+                    elif isinstance(value, list):
+                        shaders_to_remove.extend(value)
+
+            # Remove shaders in reverse order (LIFO for shader stack)
+            removal_errors = []
+            for shader in reversed(shaders_to_remove):
+                try:
+                    result = self.socket_manager.send_command(
+                        request.instance_id,
+                        ["change-list", "glsl-shaders", "remove", shader],
+                    )
+                    if result.get("error") != "success":
+                        removal_errors.append(f"{shader}: {result.get('error')}")
+                        logger.warning(
+                            "Failed to remove shader",
+                            instance_id=request.instance_id,
+                            shader=shader,
+                            error=result.get("error"),
+                        )
+                except Exception as e:
+                    removal_errors.append(f"{shader}: {str(e)}")
+                    logger.error(
+                        "Exception while removing shader",
+                        instance_id=request.instance_id,
+                        shader=shader,
+                        exception=str(e),
+                    )
+
+            # Remove profile from tracking (do this even if shader removal had errors)
+            if request.instance_id in self.socket_manager._applied_profiles:
+                self.socket_manager._applied_profiles[request.instance_id] = [
+                    (name, ptype)
+                    for name, ptype in self.socket_manager._applied_profiles[request.instance_id]
+                    if name != request.profile_name
+                ]
+
+            logger.info(
+                "Removed profile",
+                instance_id=request.instance_id,
+                profile=request.profile_name,
+                shaders_removed=len(shaders_to_remove),
+                errors=len(removal_errors),
+            )
+
+            # Get updated state
+            state = self.socket_manager.get_standard_state(request.instance_id)
+
+            # Determine overall success
+            command_success = len(removal_errors) == 0
+
+            # Build response data
+            response_data = {
+                "shaders_removed": len(shaders_to_remove),
+            }
+            if removal_errors:
+                response_data["errors"] = removal_errors
+
+            return CommandResponse(
+                command_result=CommandResult(
+                    success=command_success,
+                    data_json=json.dumps(response_data),
+                    error_message=f"Failed to remove {len(removal_errors)} shader(s)" if removal_errors else "",
+                ),
+                state=self._mpv_state_to_proto(state),
+                instance_id=request.instance_id,
+            )
+
+        except MpvControllerError as e:
+            logger.error("gRPC RemoveProfile error", error=str(e), code=e.code)
+            return CommandResponse(
+                command_result=CommandResult(success=False),
+                instance_id=request.instance_id,
+                error=self._create_error_detail(e),
+            )
+
     def Check(self, request, context):
         """Health check."""
         logger.debug("gRPC health check")
@@ -479,19 +624,21 @@ class MpvControllerService(MpvControllerServicer):
 def create_grpc_server(
     config: Config,
     socket_manager: MpvSocketManager,
+    profile_manager: ProfileManager,
 ) -> grpc.Server:
     """Create and configure the gRPC server.
 
     Args:
         config: Application configuration.
         socket_manager: Socket manager for mpv communication.
+        profile_manager: Profile manager for mpv profiles.
 
     Returns:
         Configured gRPC server (not started).
     """
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     
-    service = MpvControllerService(config, socket_manager)
+    service = MpvControllerService(config, socket_manager, profile_manager)
     add_MpvControllerServicer_to_server(service, server)
     
     bind_address = f"{config.server.bind_address}:{config.server.grpc_port}"

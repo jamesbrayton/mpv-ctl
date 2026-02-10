@@ -11,6 +11,7 @@ class ProfileMode(str, Enum):
 
     RESET = "reset"
     ADDITIVE = "additive"
+    RESET_ADDITIVE = "reset,additive"
 
 
 # Error Codes
@@ -385,7 +386,11 @@ class ProfileInfo(BaseModel):
     )
     profile_mode: ProfileMode = Field(
         ...,
-        description="Application mode (reset or additive)",
+        description="Application mode (reset, additive, or reset,additive)",
+    )
+    track: bool = Field(
+        True,
+        description="Whether to track this profile in applied_profiles list (default: True)",
     )
 
 

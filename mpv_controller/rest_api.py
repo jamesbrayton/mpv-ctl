@@ -70,7 +70,7 @@ def create_rest_app(
     app = FastAPI(
         title="mpv Controller API",
         description="REST API for controlling multiple mpv instances via Unix sockets",
-        version="0.3.0",
+        version="0.5.0",
         docs_url="/docs" if config.server.enable_swagger_ui else None,
         redoc_url="/redoc" if config.server.enable_swagger_ui else None,
     )
@@ -1133,6 +1133,7 @@ def create_rest_app(
                     profile_name,
                     profile.profile_type,
                     profile.profile_mode,
+                    profile.track,
                 )
                 logger.info(
                     "Profile tracked successfully",
@@ -1140,6 +1141,7 @@ def create_rest_app(
                     profile=profile_name,
                     type=profile.profile_type,
                     mode=profile.profile_mode.value,
+                    track=profile.track,
                 )
             except Exception as e:
                 logger.error(
@@ -1184,6 +1186,141 @@ def create_rest_app(
                 content=response.model_dump(),
             )
         
+        return response
+
+    @app.delete(
+        "/instances/{instance_id}/profiles/{profile_name}",
+        response_model=CommandResponse,
+        tags=["Profile Management"],
+        summary="Remove an applied profile",
+        description=(
+            "Removes a previously applied profile from an mpv instance. "
+            "For shader profiles, removes the shaders from the glsl stack. "
+            "For other profile types, this only removes the profile from the tracking list without reverting changes."
+        ),
+        responses={
+            404: {"model": ErrorResponse, "description": "Instance or profile not found"},
+            400: {"model": ErrorResponse, "description": "Profile cannot be removed (wrong type or not shader)"},
+            502: {"model": ErrorResponse, "description": "Failed to communicate with mpv instance"},
+        },
+    )
+    async def remove_profile(
+        instance_id: str = PathParam(..., description="ID of the mpv instance"),
+        profile_name: str = PathParam(..., description="Name of the profile to remove"),
+    ):
+        """Remove an applied profile from an mpv instance."""
+        logger.info("Remove profile", instance_id=instance_id, profile=profile_name)
+
+        # Check if profile is currently applied
+        applied_profiles = socket_manager.get_applied_profiles(instance_id)
+        if profile_name not in applied_profiles:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "PROFILE_NOT_APPLIED",
+                    "message": f"Profile '{profile_name}' is not currently applied to instance '{instance_id}'",
+                    "details": {
+                        "instance_id": instance_id,
+                        "profile": profile_name,
+                        "applied_profiles": applied_profiles,
+                    },
+                },
+            )
+
+        # Get profile metadata
+        try:
+            profile = profile_manager.get_profile(profile_name)
+        except ProfileNotFoundError:
+            raise
+
+        # Only shader profiles can be properly removed (others would require state snapshots)
+        if profile.profile_type != "shader":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "PROFILE_TYPE_NOT_REMOVABLE",
+                    "message": f"Only shader profiles can be removed. Profile '{profile_name}' is type '{profile.profile_type}'",
+                    "details": {
+                        "instance_id": instance_id,
+                        "profile": profile_name,
+                        "profile_type": profile.profile_type,
+                    },
+                },
+            )
+
+        # Extract shaders from profile options
+        shaders_to_remove = []
+        for key, value in profile.options.items():
+            if key == "glsl-shaders-append":
+                # Normalize to list
+                if isinstance(value, str):
+                    shaders_to_remove.append(value)
+                elif isinstance(value, list):
+                    shaders_to_remove.extend(value)
+
+        # Remove shaders in reverse order (LIFO for shader stack)
+        removal_errors = []
+        for shader in reversed(shaders_to_remove):
+            try:
+                result = socket_manager.send_command(
+                    instance_id,
+                    ["change-list", "glsl-shaders", "remove", shader],
+                )
+                if result.get("error") != "success":
+                    removal_errors.append(f"{shader}: {result.get('error')}")
+                    logger.warning(
+                        "Failed to remove shader",
+                        instance_id=instance_id,
+                        shader=shader,
+                        error=result.get("error"),
+                    )
+            except Exception as e:
+                removal_errors.append(f"{shader}: {str(e)}")
+                logger.error(
+                    "Exception while removing shader",
+                    instance_id=instance_id,
+                    shader=shader,
+                    exception=str(e),
+                )
+
+        # Remove profile from tracking (do this even if shader removal had errors)
+        if instance_id in socket_manager._applied_profiles:
+            socket_manager._applied_profiles[instance_id] = [
+                (name, ptype)
+                for name, ptype in socket_manager._applied_profiles[instance_id]
+                if name != profile_name
+            ]
+
+        logger.info(
+            "Removed profile",
+            instance_id=instance_id,
+            profile=profile_name,
+            shaders_removed=len(shaders_to_remove),
+            errors=len(removal_errors),
+        )
+
+        # Get updated state
+        state = socket_manager.get_standard_state(instance_id)
+
+        # Determine overall success
+        command_success = len(removal_errors) == 0
+
+        response = CommandResponse(
+            command_result=CommandResult(
+                success=command_success,
+                data={"shaders_removed": len(shaders_to_remove), "errors": removal_errors} if removal_errors else None,
+                error=f"Failed to remove {len(removal_errors)} shader(s)" if removal_errors else None,
+            ),
+            state=state,
+            instance_id=instance_id,
+        )
+
+        if not command_success:
+            return JSONResponse(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                content=response.model_dump(),
+            )
+
         return response
 
     # ==================== Playlist File Management Endpoints ====================
