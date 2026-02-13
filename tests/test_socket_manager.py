@@ -86,6 +86,36 @@ def test_send_command_success(mock_socket_class, socket_manager):
 
 
 @patch("socket.socket")
+def test_send_command_with_multiple_json_responses(mock_socket_class, socket_manager):
+    """Test handling of multiple JSON responses from mpv.
+    
+    When apply-profile is executed, mpv sends the command response followed by
+    property-change events. We should parse only the first JSON object.
+    """
+    mock_sock = MagicMock()
+    mock_socket_class.return_value.__enter__.return_value = mock_sock
+    
+    # Simulate mpv sending command response + event notification
+    # This is what happens when apply-profile triggers property changes
+    response = {"error": "success"}
+    event = {"id": 100, "result": None}
+    combined_response = (
+        json.dumps(response) + "\n" +
+        json.dumps(event) + "\n"
+    ).encode()
+    
+    mock_sock.recv.return_value = combined_response
+    
+    # Should parse only the first JSON object (the command response)
+    result = socket_manager.send_command("mpv-0", ["apply-profile", "anime4k"])
+    
+    # Verify we got only the command response, not the event
+    assert result == response
+    assert "id" not in result  # Event field should not be present
+    mock_sock.connect.assert_called_once_with("/tmp/mpv-0.sock")
+
+
+@patch("socket.socket")
 def test_send_command_timeout(mock_socket_class, socket_manager):
     """Test command timeout handling."""
     mock_sock = MagicMock()

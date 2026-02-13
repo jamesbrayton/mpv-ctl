@@ -205,24 +205,41 @@ class MpvSocketManager:
                 command_json = json.dumps({"command": command})
                 s.sendall(command_json.encode() + b"\n")
                 
-                # Receive response
+                # Receive and parse first JSON response only
+                # Note: mpv may send multiple JSON objects (command response + events)
+                # We only care about the first one (the command response itself)
                 response_data = b""
                 while True:
                     chunk = s.recv(4096)
                     if not chunk:
                         break
                     response_data += chunk
-                    if b"\n" in response_data:
-                        break
+                    
+                    # Try to parse the first complete JSON object
+                    try:
+                        # Find the first newline and try to parse just that line
+                        first_line_end = response_data.find(b"\n")
+                        if first_line_end != -1:
+                            first_line = response_data[:first_line_end].decode().strip()
+                            if first_line:
+                                response = json.loads(first_line)
+                                logger.debug(
+                                    "Command executed",
+                                    instance_id=instance_id,
+                                    command=command,
+                                    response=response,
+                                )
+                                return response
+                    except json.JSONDecodeError:
+                        # First line wasn't valid JSON, keep reading
+                        pass
                 
-                response = json.loads(response_data.decode().strip())
-                logger.debug(
-                    "Command executed",
-                    instance_id=instance_id,
-                    command=command,
-                    response=response,
+                # If we get here, we didn't receive a valid response
+                raise CommandExecutionError(
+                    instance_id,
+                    command,
+                    "No valid JSON response received",
                 )
-                return response
                 
         except socket.timeout:
             raise SocketTimeoutError(instance_id, timeout)
